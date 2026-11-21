@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Chat</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
+</head>
+<body>
+
+    <!-- Sidebar / Contact List -->
+    <aside class="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <div class="chat-brand">
+                <img src="/logo.png" alt="CURYENT Logo">
+                <span>Chat</span>
+            </div>
+            <a href="/" class="chat-home-link" title="Home">
+                <i class="fas fa-house"></i>
+            </a>
+        </div>
+
+        <div class="chat-search">
+            <input type="text" id="contact-search" placeholder="Search conversations...">
+            <i class="fas fa-search"></i>
+        </div>
+
+        <div class="chat-contact-list" id="contact-list">
+            <!-- Contacts will be rendered here -->
+        </div>
+
+        <button class="chat-new-chat-btn" id="chat-new-chat-btn" title="New conversation">
+            <i class="fas fa-plus"></i>
+        </button>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-main">
+        <!-- Empty state when no chat is selected -->
+        <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-content">
+                <i class="fas fa-comments"></i>
+                <h2>CURYENT Chat</h2>
+                <p>Send and receive messages with clients and service providers.</p>
+                <div class="chat-empty-features">
+                    <div class="chat-feature">
+                        <i class="fas fa-lock"></i>
+                        <span>Private conversations</span>
+                    </div>
+                    <div class="chat-feature">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Instant messaging</span>
+                    </div>
+                    <div class="chat-feature">
+                        <i class="fas fa-image"></i>
+                        <span>Share media files</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active chat view -->
+        <div class="chat-view" id="chat-view" style="display: none;">
+            <div class="chat-header">
+                <button class="chat-back-btn" id="chat-back-btn" title="Back to contacts">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="chat-contact-info">
+                    <div class="chat-contact-avatar" id="chat-contact-avatar">
+                        <span id="chat-contact-initial">?</span>
+                    </div>
+                    <div class="chat-contact-details">
+                        <span class="chat-contact-name" id="chat-contact-name">Select a chat</span>
+                        <span class="chat-contact-status" id="chat-contact-status">Offline</span>
+                    </div>
+                </div>
+                <div class="chat-header-actions">
+                    <button class="chat-action-btn" title="Voice call">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="chat-action-btn" title="Video call">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="chat-action-btn" title="More options">
+                        <i class="fas fa-ellipsis-vertical"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be rendered here -->
+            </div>
+
+            <div class="chat-input-area">
+                <button class="chat-attach-btn" title="Attach file">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <div class="chat-input-wrapper">
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Type a message..."
+                        autocomplete="off"
+                    >
+                    <button class="chat-emoji-btn" title="Emoji">
+                        <i class="fas fa-face-smile"></i>
+                    </button>
+                </div>
+                <button class="chat-send-btn" id="chat-send-btn" title="Send message">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- New Conversation Slide-Up Panel -->
+    <div class="chat-overlay" id="chat-overlay">
+        <div class="chat-slide-up" id="chat-slide-up">
+            <div class="chat-slide-up-header">
+                <h3>New Conversation</h3>
+                <button class="chat-slide-up-close" id="chat-slide-up-close" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-slide-up-search">
+                <input type="text" id="slide-up-search" placeholder="Search users...">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="chat-slide-up-list" id="chat-slide-up-list">
+                <!-- Users will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current user info from backend
+        const currentUserId = {{ user_id if user_id else 'null' }};
+        const isLoggedIn = {{ 'true' if logged_in else 'false' }};
+
+        // DOM elements
+        const chatMain = document.querySelector('.chat-main');
+        const contactList = document.getElementById('contact-list');
+        const chatEmpty = document.getElementById('chat-empty');
+        const chatView = document.getElementById('chat-view');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatBackBtn = document.getElementById('chat-back-btn');
+        const chatContactName = document.getElementById('chat-contact-name');
+        const chatContactStatus = document.getElementById('chat-contact-status');
+        const chatContactInitial = document.getElementById('chat-contact-initial');
+        const chatContactAvatar = document.getElementById('chat-contact-avatar');
+        const messageInput = document.getElementById('message-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const contactSearch = document.getElementById('contact-search');
+        const chatOverlay = document.getElementById('chat-overlay');
+        const chatSlideUp = document.getElementById('chat-slide-up');
+        const chatNewChatBtn = document.getElementById('chat-new-chat-btn');
+        const chatSlideUpClose = document.getElementById('chat-slide-up-close');
+        const slideUpSearch = document.getElementById('slide-up-search');
+        const slideUpList = document.getElementById('chat-slide-up-list');
+
+        let activeContactId = null;
+        let activeConversationId = null;
+        let allContacts = [];
+        let allUsers = [];
+        let messageStore = {};
+        let pollingInterval = null;
+
+        // Format timestamp to readable string
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + 'm ago';
+            if (diffHours < 24) return diffHours + 'h ago';
+            if (diffDays < 7) return diffDays + 'd ago';
+            return date.toLocaleDateString();
+        }
+
+        function formatMessageTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Load all available users
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/chat/users');
+                const data = await res.json();
+                if (data.success) {
+                    allUsers = data.users;
+                }
+            } catch (err) {
+                console.error('Failed to load users:', err);
+            }
+        }
+
+        // Load conversations from backend
+        async function loadConversations() {
+            try {
+                const res = await fetch('/api/chat/conversations');
+                const data = await res.json();
+                if (data.success) {
+                    allContacts = data.conversations.map(c => ({
+                        id: c.other_user_id,
+                        name: c.username,
+                        role: c.role,
+                        avatar: c.username.charAt(0).toUpperCase(),
+                        profile_image: c.profile_image || '',
+                        lastMessage: c.last_message || '',
+                        time: c.last_message_time ? formatTime(c.last_message_time) : '',
+                        unread: c.unread,
+                        online: false,
+                        conversation_id: c.conversation_id,
+                    }));
+                }
+            } catch (err) {
+                console.error('Failed to load conversations:', err);
+            }
+        }
+
+        // Render contact list
+        function renderContacts(filter = '') {
+            contactList.innerHTML = '';
+
+            // Merge conversations with all users
+            let displayContacts = [...allContacts];
+
+            // Add users who are not in conversations yet
+            allUsers.forEach(user => {
+                const exists = displayContacts.find(c => c.id === user.id);
+                if (!exists) {
+                    displayContacts.push({
+                        id: user.id,
+                        name: user.username,
+                        role: user.role,
+                        avatar: user.username.charAt(0).toUpperCase(),
+                        profile_image: user.profile_image || '',
+                        lastMessage: 'Start a conversation',
+                        time: '',
+                        unread: 0,
+                        online: false,
+                        conversation_id: null,
+                    });
+                }
+            });
+
+            const filtered = displayContacts.filter(c =>
+                c.name.toLowerCase().includes(filter.toLowerCase()) ||
+                c.role.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                contactList.innerHTML = `
+                    <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+                        <i class="fas fa-users" style="font-size: 40px; color: rgba(201,160,255,0.3); margin-bottom: 16px;"></i>
+                        <h3 style="color: #ffffff; margin-bottom: 8px;">No Contacts</h3>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 14px;">
+                            ${isLoggedIn ? 'No users available to chat with yet.' : 'Please sign in to start chatting.'}
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(contact => {
+                const div = document.createElement('div');
+                div.className = `chat-contact ${activeContactId === contact.id ? 'active' : ''}`;
+                div.onclick = () => openChat(contact.id);
+
+                const hasImage = contact.profile_image && contact.profile_image !== '';
+                const avatarHtml = hasImage 
+                    ? `<img src="${escapeHtml(contact.profile_image)}" alt="${escapeHtml(contact.name)}">`
+                    : `<span>${contact.avatar}</span>`;
+
+                const displayLastMsg = contact.lastMessage || '';
+                const displayTime = contact.time || '';
+
+                div.innerHTML = `
+                    <div class="chat-contact-avatar-item ${contact.online ? 'online' : ''}">
+                        ${avatarHtml}
+                        ${contact.online ? '<span class="online-dot"></span>' : ''}
+                    </div>
+                    <div class="chat-contact-body">
+                        <div class="chat-contact-top">
+                            <span class="chat-contact-name-item">${contact.name}</span>
+                            <span class="chat-contact-time">${displayTime}</span>
+                        </div>
+                        <div class="chat-contact-bottom">
+                            <span class="chat-contact-last-msg">${displayLastMsg}</span>
+                            ${contact.unread > 0 ? `<span class="chat-unread-badge">${contact.unread}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+                contactList.appendChild(div);
+            });
+        }
+
+        // Poll for new messages in the active conversation
+        async function pollMessages() {
+            if (!isLoggedIn || !activeContactId) return;
+
+            try {
+                const res = await fetch(`/api/chat/messages/${activeContactId}`);
+                const data = await res.json();
+                if (data.success) {
+                    activeConversationId = data.conversation_id;
+                    const newMessages = data.messages;
+                    const oldCount = messageStore[activeContactId] ? messageStore[activeContactId].length : 0;
+
+                    if (newMessages.length > oldCount) {
+                        // New messages arrived — append only the new ones
+                        const contactMessages = messageStore[activeContactId] || [];
+                        const existingIds = new Set(contactMessages.map(m => m.id));
+                        let appended = false;
+
+                        newMessages.forEach(msg => {
+                            if (!existingIds.has(msg.id)) {
+                                const isMe = msg.sender_id == currentUserId;
+                                const div = document.createElement('div');
+                                div.className = `chat-message ${isMe ? 'sent' : 'received'}`;
+                                div.innerHTML = `
+                                    <div class="chat-bubble">
+                                        <p>${escapeHtml(msg.text)}</p>
+                                        <span class="chat-msg-time">${formatMessageTime(msg.created_at)} ${isMe ? '<i class="fas fa-check-double"></i>' : ''}</span>
+                                    </div>
+                                `;
+                                chatMessages.appendChild(div);
+                                appended = true;
+                            }
+                        });
+
+                        if (appended) {
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+
+                        messageStore[activeContactId] = newMessages;
+                    }
+                }
+            } catch (err) {
+                // Silently fail — will retry on next poll
+            }
+        }
+
+        // Poll for new conversations (updates contact list)
+        async function pollConversations() {
+            if (!isLoggedIn) return;
+
+            try {
+                const res = await fetch('/api/chat/conversations');
+                const data = await res.json();
+                if (data.success) {
+                    const newContacts = data.conversations.map(c => ({
+                        id: c.other_user_id,
+                        name: c.username,
+                        role: c.role,
+                        avatar: c.username.charAt(0).toUpperCase(),
+                        profile_image: c.profile_image || '',
+                        lastMessage: c.last_message || '',
+                        time: c.last_message_time ? formatTime(c.last_message_time) : '',
+                        unread: c.unread,
+                        online: false,
+                        conversation_id: c.conversation_id,
+                    }));
+
+                    // Check if any new conversations appeared
+                    const oldIds = new Set(allContacts.map(c => c.id));
+                    const hasNew = newContacts.some(c => !oldIds.has(c.id));
+
+                    if (hasNew || newContacts.length !== allContacts.length) {
+                        allContacts = newContacts;
+                        renderContacts(contactSearch.value);
+                    } else {
+                        // Update unread counts and last messages in place
+                        newContacts.forEach(newC => {
+                            const existing = allContacts.find(c => c.id === newC.id);
+                            if (existing) {
+                                existing.unread = newC.unread;
+                                existing.lastMessage = newC.lastMessage;
+                                existing.time = newC.time;
+                            }
+                        });
+                        renderContacts(contactSearch.value);
+                    }
+                }
+            } catch (err) {
+                // Silently fail — will retry on next poll
+            }
+        }
+
+        // Start polling for new messages and conversations
+        function startPolling() {
+            stopPolling();
+            // Poll every 3 seconds
+            pollingInterval = setInterval(() => {
+                pollConversations();
+                if (activeContactId) {
+                    pollMessages();
+                }
+            }, 3000);
+        }
+
+        // Stop polling
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        // Open a chat
+        async function openChat(contactId) {
+            if (!isLoggedIn) {
+                alert('Please sign in to chat.');
+                return;
+            }
+
+            activeContactId = contactId;
+
+            // Find contact info
+            const contact = allContacts.find(c => c.id === contactId) || allUsers.find(u => u.id === contactId);
+            const name = contact ? contact.name : 'User';
+            const avatar = contact ? contact.avatar : '?';
+            const profileImage = contact ? (contact.profile_image || '') : '';
+
+            // Update header
+            chatContactName.textContent = name;
+            chatContactStatus.textContent = 'Loading...';
+            chatContactInitial.textContent = avatar;
+
+            // Update avatar with profile image or fallback to initial
+            if (profileImage) {
+                chatContactAvatar.innerHTML = `<img src="${escapeHtml(profileImage)}" alt="${escapeHtml(name)}">`;
+            } else {
+                chatContactAvatar.innerHTML = `<span id="chat-contact-initial">${avatar}</span>`;
+            }
+
+            // Show chat view, hide empty state
+            chatEmpty.style.display = 'none';
+            chatView.style.display = 'flex';
+
+            // On mobile, slide in the chat view
+            chatMain.classList.add('active');
+
+            // Load messages from backend
+            try {
+                const res = await fetch(`/api/chat/messages/${contactId}`);
+                const data = await res.json();
+                if (data.success) {
+                    activeConversationId = data.conversation_id;
+                    messageStore[contactId] = data.messages;
+                    chatContactStatus.textContent = 'Connected';
+                }
+            } catch (err) {
+                console.error('Failed to load messages:', err);
+                chatContactStatus.textContent = 'Error';
+            }
+
+            // Render messages
+            renderMessages(contactId);
+
+            // Update contact list active state
+            renderContacts(contactSearch.value);
+
+            // Clear unread
+            const convContact = allContacts.find(c => c.id === contactId);
+            if (convContact) convContact.unread = 0;
+
+            // Focus input
+            messageInput.focus();
+
+            // Start polling for new messages
+            startPolling();
+        }
+
+        // Render messages
+        function renderMessages(contactId) {
+            chatMessages.innerHTML = '';
+            const contactMessages = messageStore[contactId] || [];
+
+            if (contactMessages.length === 0) {
+                chatMessages.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.4);">
+                        <i class="fas fa-comment-dots" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                        <p>No messages yet. Start the conversation!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Add date separator
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'chat-date-separator';
+            dateDiv.innerHTML = '<span>Messages</span>';
+            chatMessages.appendChild(dateDiv);
+
+            contactMessages.forEach(msg => {
+                const isMe = msg.sender_id == currentUserId;
+                const div = document.createElement('div');
+                div.className = `chat-message ${isMe ? 'sent' : 'received'}`;
+
+                div.innerHTML = `
+                    <div class="chat-bubble">
+                        <p>${escapeHtml(msg.text)}</p>
+                        <span class="chat-msg-time">${formatMessageTime(msg.created_at)} ${isMe ? '<i class="fas fa-check-double"></i>' : ''}</span>
+                    </div>
+                `;
+                chatMessages.appendChild(div);
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !activeContactId || !isLoggedIn) return;
+
+            // Optimistically add message to UI
+            const now = new Date();
+            const optimisticMsg = {
+                id: Date.now(),
+                sender_id: currentUserId,
+                sender_name: 'You',
+                text: text,
+                is_read: 1,
+                created_at: now.toISOString(),
+            };
+
+            if (!messageStore[activeContactId]) messageStore[activeContactId] = [];
+            messageStore[activeContactId].push(optimisticMsg);
+            renderMessages(activeContactId);
+            messageInput.value = '';
+
+            // Send to backend
+            try {
+                const res = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to_user_id: activeContactId,
+                        text: text,
+                    }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    activeConversationId = data.conversation_id;
+                }
+            } catch (err) {
+                console.error('Failed to send message:', err);
+            }
+
+            // Refresh contact list
+            await loadConversations();
+            renderContacts(contactSearch.value);
+        }
+
+        // Back to contacts
+        chatBackBtn.addEventListener('click', () => {
+            chatView.style.display = 'none';
+            chatEmpty.style.display = 'flex';
+            activeContactId = null;
+            activeConversationId = null;
+
+            // On mobile, slide out the chat view
+            chatMain.classList.remove('active');
+
+            renderContacts(contactSearch.value);
+        });
+
+        // Start polling on page load (for conversation updates)
+        if (isLoggedIn) {
+            startPolling();
+        }
+
+        // Send on click
+        chatSendBtn.addEventListener('click', sendMessage);
+
+        // Send on Enter
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Search contacts
+        contactSearch.addEventListener('input', (e) => {
+            renderContacts(e.target.value);
+        });
+
+        // =====================
+        // New Conversation Slide-Up Panel
+        // =====================
+
+        // Render users in the slide-up panel
+        function renderSlideUpUsers(filter = '') {
+            slideUpList.innerHTML = '';
+
+            const filtered = allUsers.filter(u =>
+                u.username.toLowerCase().includes(filter.toLowerCase()) ||
+                (u.role && u.role.toLowerCase().includes(filter.toLowerCase())) ||
+                (u.location && u.location.toLowerCase().includes(filter.toLowerCase()))
+            );
+
+            if (filtered.length === 0) {
+                slideUpList.innerHTML = `
+                    <div class="chat-slide-up-empty">
+                        <i class="fas fa-users"></i>
+                        <p>No users found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'chat-slide-up-user';
+                div.onclick = () => selectUserForChat(user.id);
+
+                const initial = (user.username || '?').charAt(0).toUpperCase();
+                const locationText = user.location || 'No location';
+
+                const hasImage = user.profile_image && user.profile_image !== '';
+                const avatarHtml = hasImage
+                    ? `<img src="${escapeHtml(user.profile_image)}" alt="${escapeHtml(user.username)}">`
+                    : `<span>${initial}</span>`;
+
+                div.innerHTML = `
+                    <div class="chat-slide-up-avatar">
+                        ${avatarHtml}
+                    </div>
+                    <div class="chat-slide-up-info">
+                        <div class="chat-slide-up-name">${escapeHtml(user.username)}</div>
+                        <div class="chat-slide-up-meta">
+                            <span><i class="fas fa-tag"></i> ${escapeHtml(user.role || 'N/A')}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locationText)}</span>
+                        </div>
+                    </div>
+                    <button class="chat-slide-up-start-btn" title="Start conversation">
+                        <i class="fas fa-comment-dots"></i>
+                    </button>
+                `;
+                slideUpList.appendChild(div);
+            });
+        }
+
+        // Open the slide-up panel
+        function openSlideUpPanel() {
+            if (!isLoggedIn) {
+                window.location.href = '/account/logi';
+                return;
+            }
+
+            // Refresh users list
+            loadUsers().then(() => {
+                chatOverlay.style.display = 'flex';
+                setTimeout(() => {
+                    chatOverlay.classList.add('active');
+                }, 10);
+                slideUpSearch.value = '';
+                renderSlideUpUsers();
+                slideUpSearch.focus();
+            });
+        }
+
+        // Close the slide-up panel
+        function closeSlideUpPanel() {
+            chatOverlay.classList.remove('active');
+            setTimeout(() => {
+                chatOverlay.style.display = 'none';
+            }, 300);
+        }
+
+        // Select a user to start a conversation
+        function selectUserForChat(userId) {
+            closeSlideUpPanel();
+            // Small delay to let the panel close animation start
+            setTimeout(() => {
+                openChat(userId);
+            }, 150);
+        }
+
+        // New chat button click
+        chatNewChatBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openSlideUpPanel();
+        });
+
+        // Close button click
+        chatSlideUpClose.addEventListener('click', closeSlideUpPanel);
+
+        // Click outside to close
+        chatOverlay.addEventListener('click', (e) => {
+            if (e.target === chatOverlay) {
+                closeSlideUpPanel();
+            }
+        });
+
+        // Search in slide-up panel
+        slideUpSearch.addEventListener('input', (e) => {
+            renderSlideUpUsers(e.target.value);
+        });
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && chatOverlay.classList.contains('active')) {
+                closeSlideUpPanel();
+            }
+        });
+
+        // Initial load
+        if (isLoggedIn) {
+            loadUsers();
+            loadConversations();
+        }
+        renderContacts();
+
+        // Clean up polling on page unload
+        window.addEventListener('beforeunload', stopPolling);
+    </script>
+</body>
+</html>

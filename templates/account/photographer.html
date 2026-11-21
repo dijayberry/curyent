@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Photographer Registration</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/djs.css">
+</head>
+<body>
+
+    <div class="profile-container">
+
+        <!-- Back to Home -->
+        <a href="/role" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Sign In Button -->
+        <a href="/account/logi" class="signin-btn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1>Photographer Registration</h1>
+            <p>Register your photography profile, equipment, and services</p>
+        </div>
+
+        <!-- Registration Form -->
+        <form class="profile-form" action="/account/photographer" method="POST" enctype="multipart/form-data">
+
+            <!-- ==================== PERSONAL DETAILS SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-user-circle"></i> Personal Details
+                </h2>
+
+                <div class="personal-grid">
+                    <!-- Profile Picture -->
+                    <div class="form-group picture-group full-width">
+                        <label>Profile Picture</label>
+                        <div class="picture-wrapper">
+                            <div class="picture-preview" id="picture-preview">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <input type="file" id="profile-picture" name="profile_picture" accept="image/*">
+                            <label for="profile-picture" class="picture-upload-btn">
+                                <i class="fas fa-camera"></i> Choose Profile Image
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <div class="field-status" id="username-status"></div>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        <div class="field-status" id="email-status"></div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone">
+                            <i class="fas fa-phone"></i> Phone
+                        </label>
+                        <div class="phone-input-wrapper">
+                            <select id="country-code" class="country-code">
+                                <option value="+93">🇦🇫 +93</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+43">🇦🇹 +43</option>
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+55">🇧🇷 +55</option>
+                                <option value="+1">🇨🇦 +1</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+213">🇩🇿 +213</option>
+                                <option value="+251">🇪🇹 +251</option>
+                                <option value="+33">🇫🇷 +33</option>
+                                <option value="+49">🇩🇪 +49</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+62">🇮🇩 +62</option>
+                                <option value="+98">🇮🇷 +98</option>
+                                <option value="+964">🇮🇶 +964</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+962">🇯🇴 +962</option>
+                                <option value="+254" selected>🇰🇪 +254</option>
+                                <option value="+60">🇲🇾 +60</option>
+                                <option value="+52">🇲🇽 +52</option>
+                                <option value="+31">🇳🇱 +31</option>
+                                <option value="+64">🇳🇿 +64</option>
+                                <option value="+92">🇵🇰 +92</option>
+                                <option value="+63">🇵🇭 +63</option>
+                                <option value="+7">🇷🇺 +7</option>
+                                <option value="+970">🇵🇸 +970</option>
+                                <option value="+250">🇷🇼 +250</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+27">🇿🇦 +27</option>
+                                <option value="+211">🇸🇸 +211</option>
+                                <option value="+234">🇳🇬 +234</option>
+                                <option value="+256">🇺🇬 +256</option>
+                                <option value="+967">🇾🇪 +967</option>
+                                <option value="+260">🇿🇲 +260</option>
+                                <option value="+263">🇿🇼 +263</option>
+                            </select>
+                            <input type="tel" id="phone" name="phone" placeholder="e.g. 712345678" required>
+                        </div>
+                        <div class="field-status" id="phone-status"></div>
+                    </div>
+
+                    <!-- Daily Rate -->
+                    <div class="form-group">
+                        <label for="daily-rate">
+                            <i class="fas fa-calendar-day"></i> Daily Rate (KES)
+                        </label>
+                        <input type="number" id="daily-rate" name="daily_rate" placeholder="Daily rate" min="0" required>
+                    </div>
+
+                    <!-- National ID No. -->
+                    <div class="form-group">
+                        <label for="national-id">
+                            <i class="fas fa-id-card"></i> National ID
+                        </label>
+                        <input type="text" id="national-id" name="national_id" placeholder="National ID number" required>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group full-width">
+                        <label for="location">
+                            <i class="fas fa-map-marker-alt"></i> Location
+                        </label>
+                        <div class="location-wrapper">
+                            <input type="text" id="location" name="location" placeholder="Enter your location" required>
+                            <button type="button" class="gps-btn" id="gps-btn" title="Auto-detect location">
+                                <i class="fas fa-location-crosshairs"></i>
+                            </button>
+                            <label class="switch-label">
+                                <input type="checkbox" id="location-switch">
+                                <span class="switch-slider"></span>
+                                <span class="switch-text">Auto-fill</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group full-width">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group full-width">
+                        <label for="confirm-password">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-confirm-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-match-status" id="password-match-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PHOTOGRAPHY DETAILS SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-camera"></i> Photography Details
+                </h2>
+                <p class="section-subtitle">Tell us about your photography services and equipment.</p>
+
+                <!-- Business Name -->
+                <div class="form-group full-width">
+                    <label for="business-name">
+                        <i class="fas fa-briefcase"></i> Business Name (Optional)
+                    </label>
+                    <input type="text" id="business-name" name="business_name" placeholder="e.g. LensCraft Photography">
+                </div>
+
+                <!-- Specialization -->
+                <div class="form-group">
+                    <label for="specialization">
+                        <i class="fas fa-crosshairs"></i> Specialization
+                    </label>
+                    <select id="specialization" name="specialization" required>
+                        <option value="">Select specialization</option>
+                        <option value="wedding">Wedding Photography</option>
+                        <option value="portrait">Portrait Photography</option>
+                        <option value="event">Event Photography</option>
+                        <option value="product">Product Photography</option>
+                        <option value="aerial">Aerial/Drone Photography</option>
+                        <option value="fashion">Fashion Photography</option>
+                        <option value="general">General Photography</option>
+                    </select>
+                </div>
+
+                <!-- Years of Experience -->
+                <div class="form-group">
+                    <label for="experience">
+                        <i class="fas fa-clock"></i> Years of Experience
+                    </label>
+                    <input type="number" id="experience" name="experience" placeholder="e.g. 5" min="0" required>
+                </div>
+
+                <!-- Camera Equipment -->
+                <div class="form-group full-width">
+                    <label for="camera-equipment">
+                        <i class="fas fa-camera-retro"></i> Camera Equipment
+                    </label>
+                    <textarea id="camera-equipment" name="camera_equipment" placeholder="List your cameras, lenses, and accessories (e.g. Canon EOS R5, 24-70mm f/2.8, DJI Mavic 3)" rows="3" required></textarea>
+                </div>
+
+                <!-- Portfolio Photos -->
+                <div class="form-group full-width">
+                    <label for="portfolio-photos">
+                        <i class="fas fa-images"></i> Portfolio Photos
+                    </label>
+                    <div class="image-upload-area">
+                        <input type="file" id="portfolio-photos" name="portfolio_photos" accept="image/*" multiple>
+                        <label for="portfolio-photos" class="image-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload Portfolio Photos
+                        </label>
+                        <div class="image-preview" id="portfolio-photos-preview"></div>
+                    </div>
+                </div>
+
+                <!-- Services Offered -->
+                <div class="form-group full-width">
+                    <label>
+                        <i class="fas fa-list-check"></i> Services Offered
+                    </label>
+                    <div class="amenities-grid">
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_photo_editing" value="photo_editing">
+                            <i class="fas fa-magic"></i> Photo Editing
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_video" value="video">
+                            <i class="fas fa-video"></i> Videography
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_drone" value="drone">
+                            <i class="fas fa-helicopter"></i> Drone Shots
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_printing" value="printing">
+                            <i class="fas fa-print"></i> Printing
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_album" value="album">
+                            <i class="fas fa-book-open"></i> Album Design
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="service_live_stream" value="live_stream">
+                            <i class="fas fa-broadcast-tower"></i> Live Streaming
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full-width">
+                    <label for="photographer-description">
+                        <i class="fas fa-align-left"></i> About Me
+                    </label>
+                    <textarea id="photographer-description" name="photographer_description" placeholder="Tell clients about your style, experience, and what makes you unique..." rows="4" required></textarea>
+                </div>
+            </div>
+
+            <!-- Sign-in link -->
+            <p class="sign-in-link">
+                I have an account, <a href="/account/logi">sign in</a>?
+            </p>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submit-btn">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+
+        </form>
+
+    </div>
+
+    <script src="/static/js/djs.js"></script>
+    <script src="/static/js/registration-otp.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: curuent
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn curyent:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    # Free domain provided by Render: curuent.onrender.com
+    # Add custom domains here after purchase, e.g.:
+    # domains:
+    #   - www.curyent.com
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: WASENDER_API_KEY
+        sync: false
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        value: https://curyent.onrender.com/api/mpesa/callback

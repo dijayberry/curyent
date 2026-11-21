@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - DJs Registration</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/djs.css">
+</head>
+<body>
+
+    <div class="profile-container">
+
+        <!-- Back to Home -->
+        <a href="/role" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Sign In Button -->
+        <a href="/account/logi" class="signin-btn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1>DJ Registration</h1>
+            <p>Register your profile, equipment, and payment details</p>
+        </div>
+
+        <!-- Registration Form -->
+        <form class="profile-form" action="/account/djs" method="POST" enctype="multipart/form-data">
+
+            <!-- ==================== PERSONAL DETAILS SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-user-circle"></i> Personal Details
+                </h2>
+
+                <div class="personal-grid">
+                    <!-- Profile Picture -->
+                    <div class="form-group picture-group full-width">
+                        <label>Profile Picture</label>
+                        <div class="picture-wrapper">
+                            <div class="picture-preview" id="picture-preview">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <input type="file" id="profile-picture" name="profile_picture" accept="image/*">
+                            <label for="profile-picture" class="picture-upload-btn">
+                                <i class="fas fa-camera"></i> Choose Profile Image
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <div class="field-status" id="username-status"></div>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        <div class="field-status" id="email-status"></div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone">
+                            <i class="fas fa-phone"></i> Phone
+                        </label>
+                        <div class="phone-input-wrapper">
+                            <select id="country-code" class="country-code">
+                                <option value="+93">🇦🇫 +93</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+43">🇦🇹 +43</option>
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+55">🇧🇷 +55</option>
+                                <option value="+1">🇨🇦 +1</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+213">🇩🇿 +213</option>
+                                <option value="+251">🇪🇹 +251</option>
+                                <option value="+33">🇫🇷 +33</option>
+                                <option value="+49">🇩🇪 +49</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+62">🇮🇩 +62</option>
+                                <option value="+98">🇮🇷 +98</option>
+                                <option value="+964">🇮🇶 +964</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+962">🇯🇴 +962</option>
+                                <option value="+254" selected>🇰🇪 +254</option>
+                                <option value="+60">🇲🇾 +60</option>
+                                <option value="+52">🇲🇽 +52</option>
+                                <option value="+31">🇳🇱 +31</option>
+                                <option value="+64">🇳🇿 +64</option>
+                                <option value="+92">🇵🇰 +92</option>
+                                <option value="+63">🇵🇭 +63</option>
+                                <option value="+7">🇷🇺 +7</option>
+                                <option value="+970">🇵🇸 +970</option>
+                                <option value="+250">🇷🇼 +250</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+27">🇿🇦 +27</option>
+                                <option value="+211">🇸🇸 +211</option>
+                                <option value="+234">🇳🇬 +234</option>
+                                <option value="+256">🇺🇬 +256</option>
+                                <option value="+967">🇾🇪 +967</option>
+                                <option value="+260">🇿🇲 +260</option>
+                                <option value="+263">🇿🇼 +263</option>
+                            </select>
+                            <input type="tel" id="phone" name="phone" placeholder="e.g. 712345678" required>
+                        </div>
+                        <div class="field-status" id="phone-status"></div>
+                    </div>
+
+                    <!-- Daily Rate -->
+                    <div class="form-group">
+                        <label for="daily-rate">
+                            <i class="fas fa-calendar-day"></i> Daily Rate (KES)
+                        </label>
+                        <input type="number" id="daily-rate" name="daily_rate" placeholder="Daily Rate" min="0" required>
+                    </div>
+
+                    <!-- National ID No. -->
+                    <div class="form-group">
+                        <label for="national-id">
+                            <i class="fas fa-id-card"></i> National ID
+                        </label>
+                        <input type="text" id="national-id" name="national_id" placeholder="National ID number" required>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group full-width">
+                        <label for="location">
+                            <i class="fas fa-map-marker-alt"></i> Location
+                        </label>
+                        <div class="location-wrapper">
+                            <input type="text" id="location" name="location" placeholder="Enter your location" required>
+                            <button type="button" class="gps-btn" id="gps-btn" title="Auto-detect location">
+                                <i class="fas fa-location-crosshairs"></i>
+                            </button>
+                            <label class="switch-label">
+                                <input type="checkbox" id="location-switch">
+                                <span class="switch-slider"></span>
+                                <span class="switch-text">Auto-fill</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group full-width">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group full-width">
+                        <label for="confirm-password">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-confirm-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-match-status" id="password-match-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== EQUIPMENT SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-headphones"></i> Equipment
+                </h2>
+                <p class="section-subtitle">Select and verify the equipment you own. Your payment rate is calculated based on your equipment.</p>
+
+                <!-- PC / Laptop -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_pc" data-value="700" class="equip-check" checked required>
+                            <div class="equipment-info">
+                                <i class="fas fa-laptop"></i>
+                                <div>
+                                    <strong>PC / Laptop <span class="required-badge">Required</span></strong>
+                                    <span class="equipment-desc">Computer for DJ software (Serato, Traktor, etc.)</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 700</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="pc-details">
+                        <div class="form-group">
+                            <label for="pc-model"><i class="fas fa-desktop"></i> PC/Laptop Model</label>
+                            <input type="text" id="pc-model" name="pc_model" placeholder="Auto-detected when selected" readonly>
+                        </div>
+                        <span class="verification-status" id="pc-status"></span>
+                    </div>
+                </div>
+
+                <!-- Controller (Turntable) -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_controller" data-value="800" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-compact-disc"></i>
+                                <div>
+                                    <strong>Controller (Turntable)</strong>
+                                    <span class="equipment-desc">DJ controller or turntable for mixing</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 800</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="controller-details">
+                        <div class="form-group">
+                            <label for="controller-model"><i class="fas fa-sliders"></i> Controller Model</label>
+                            <input type="text" id="controller-model" name="controller_model" placeholder="Auto-detected when connected" readonly>
+                        </div>
+                        <span class="verification-status" id="controller-status"></span>
+                        <div class="midi-device-list" id="midi-device-list"></div>
+                        <div class="controller-warning" id="controller-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>No controller detected. Please plug in your DJ controller via USB or connect a MIDI device — it will be auto-detected.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mixer -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_mixer" data-value="3000" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-sliders-h"></i>
+                                <div>
+                                    <strong>Mixer</strong>
+                                    <span class="equipment-desc">Audio mixer for sound control</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 3,000</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="mixer-details">
+                        <div class="form-group image-upload-group">
+                            <label for="mixer-image"><i class="fas fa-image"></i> Mixer Photo (for verification)</label>
+                            <div class="image-upload-area">
+                                <input type="file" id="mixer-image" name="mixer_image" accept="image/*">
+                                <label for="mixer-image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload Photo
+                                </label>
+                                <div class="image-preview" id="mixer-image-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="mixer-model"><i class="fas fa-tag"></i> Mixer Model</label>
+                            <input type="text" id="mixer-model" name="mixer_model" placeholder="e.g. Pioneer DJM-750">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speakers -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_speakers" data-value="3000" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-volume-up"></i>
+                                <div>
+                                    <strong>Speakers</strong>
+                                    <span class="equipment-desc">Sound speakers (minimum 3 for PA setup)</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 3,000</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="speakers-details">
+                        <div class="form-group image-upload-group">
+                            <label for="speakers-image"><i class="fas fa-image"></i> Speaker Photos</label>
+                            <div class="image-upload-area">
+                                <input type="file" id="speakers-image" name="speakers_image" accept="image/*" multiple>
+                                <label for="speakers-image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload Photos
+                                </label>
+                                <div class="image-preview" id="speakers-image-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="speakers-quantity"><i class="fas fa-sort-numeric-up"></i> Number of Speakers</label>
+                            <input type="number" id="speakers-quantity" name="speakers_quantity" placeholder="e.g. 3" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="speakers-model"><i class="fas fa-tag"></i> Speaker Model</label>
+                            <input type="text" id="speakers-model" name="speakers_model" placeholder="e.g. JBL EON 710">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generator -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_generator" data-value="2000" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-bolt"></i>
+                                <div>
+                                    <strong>Generator</strong>
+                                    <span class="equipment-desc">Power generator for events</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 2,000</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="generator-details">
+                        <div class="form-group image-upload-group">
+                            <label for="generator-image"><i class="fas fa-image"></i> Generator Photo</label>
+                            <div class="image-upload-area">
+                                <input type="file" id="generator-image" name="generator_image" accept="image/*">
+                                <label for="generator-image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload Photo
+                                </label>
+                                <div class="image-preview" id="generator-image-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="generator-power"><i class="fas fa-bolt"></i> Power Capacity (kVA)</label>
+                            <input type="number" id="generator-power" name="generator_power" placeholder="e.g. 5" min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="generator-model"><i class="fas fa-tag"></i> Generator Model</label>
+                            <input type="text" id="generator-model" name="generator_model" placeholder="e.g. Kipor KDE5000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projector -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_projector" data-value="2000" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-tv"></i>
+                                <div>
+                                    <strong>Projector</strong>
+                                    <span class="equipment-desc">Video projector for visual displays</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 2,000</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="projector-details">
+                        <div class="form-group">
+                            <label for="projector-model"><i class="fas fa-tag"></i> Projector Model</label>
+                            <input type="text" id="projector-model" name="projector_model" placeholder="Auto-detected when connected" readonly>
+                        </div>
+                        <span class="verification-status" id="projector-status"></span>
+                    </div>
+                </div>
+
+                <!-- Microphones -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_microphones" data-value="1500" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-microphone"></i>
+                                <div>
+                                    <strong>Microphones</strong>
+                                    <span class="equipment-desc">Wireless or wired microphones</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 1,500</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="microphones-details">
+                        <div class="form-group image-upload-group">
+                            <label for="microphones-image"><i class="fas fa-image"></i> Microphone Photos</label>
+                            <div class="image-upload-area">
+                                <input type="file" id="microphones-image" name="microphones_image" accept="image/*" multiple>
+                                <label for="microphones-image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload Photos
+                                </label>
+                                <div class="image-preview" id="microphones-image-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="microphones-quantity"><i class="fas fa-sort-numeric-up"></i> Number of Microphones</label>
+                            <input type="number" id="microphones-quantity" name="microphones_quantity" placeholder="e.g. 2" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="microphones-model"><i class="fas fa-tag"></i> Microphone Model</label>
+                            <input type="text" id="microphones-model" name="microphones_model" placeholder="e.g. Shure SM58">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Music Instruments -->
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <label class="equipment-checkbox">
+                            <input type="checkbox" name="equipment_instruments" data-value="2000" class="equip-check">
+                            <div class="equipment-info">
+                                <i class="fas fa-guitar"></i>
+                                <div>
+                                    <strong>Music Instruments</strong>
+                                    <span class="equipment-desc">Additional musical instruments</span>
+                                </div>
+                            </div>
+                            <span class="equipment-value">KES 2,000</span>
+                        </label>
+                    </div>
+                    <div class="equipment-details" id="instruments-details">
+                        <div class="form-group image-upload-group">
+                            <label for="instruments-image"><i class="fas fa-image"></i> Instrument Photos</label>
+                            <div class="image-upload-area">
+                                <input type="file" id="instruments-image" name="instruments_image" accept="image/*" multiple>
+                                <label for="instruments-image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload Photos
+                                </label>
+                                <div class="image-preview" id="instruments-image-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="instruments-name"><i class="fas fa-music"></i> Instrument Names</label>
+                            <input type="text" id="instruments-name" name="instruments_name" placeholder="e.g. Keyboard, Drum Set, Guitar">
+                        </div>
+                        <div class="form-group">
+                            <label for="instruments-quantity"><i class="fas fa-sort-numeric-up"></i> Number of Instruments</label>
+                            <input type="number" id="instruments-quantity" name="instruments_quantity" placeholder="e.g. 2" min="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PAYMENT RATE SECTION ==================== -->
+            <div class="section-block payment-section">
+                <h2 class="section-title">
+                    <i class="fas fa-money-bill-wave"></i> Payment Rate Summary
+                </h2>
+                <p class="section-subtitle">This is how much you will be paid per event based on your daily rate and equipment.</p>
+
+                <div class="payment-breakdown">
+                    <!-- Daily Rate -->
+                    <div class="payment-row">
+                        <span class="payment-label">
+                            <i class="fas fa-calendar-day"></i> Daily Rate
+                        </span>
+                        <span class="payment-value" id="pay-daily">KES 0</span>
+                    </div>
+
+                    <!-- Equipment Breakdown (dynamic rows) -->
+                    <div class="payment-equipment-breakdown" id="pay-equipment-breakdown">
+                        <div class="payment-row equipment-empty">
+                            <span class="payment-label">
+                                <i class="fas fa-headphones"></i> Equipment
+                            </span>
+                            <span class="payment-value">No equipment verified yet</span>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Subtotal -->
+                    <div class="payment-row">
+                        <span class="payment-label">
+                            <i class="fas fa-headphones"></i> Equipment Subtotal
+                        </span>
+                        <span class="payment-value" id="pay-equipment">KES 0</span>
+                    </div>
+
+
+                    <!-- Divider -->
+                    <div class="payment-divider"></div>
+
+                    <!-- Total -->
+                    <div class="payment-row total-row">
+                        <span class="payment-label">
+                            <i class="fas fa-calculator"></i> Total per Event
+                        </span>
+                        <span class="payment-value total-value" id="pay-total">KES 0</span>
+                    </div>
+                </div>
+
+                <!-- Package Reference Table (for reference only, not used in calculation) -->
+                <div class="package-reference">
+                    <h3><i class="fas fa-sticky-note"></i> Package Reference <small>(for your information only)</small></h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Package</th>
+                                <th>Equipment Required</th>
+                                <th>DJ Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Basic</td>
+                                <td>PC/Laptop only</td>
+                                <td>KES 700</td>
+                            </tr>
+                            <tr>
+                                <td>Standard</td>
+                                <td>PC/Laptop + Controller</td>
+                                <td>KES 1,500</td>
+                            </tr>
+                            <tr>
+                                <td>Mixer Add-on</td>
+                                <td>Mixer + Microphones + 3 Speakers + Generator</td>
+                                <td>KES 10,000</td>
+                            </tr>
+                            <tr class="highlight">
+                                <td>PA</td>
+                                <td>PC + Controller + Mixer + Mics + 3 Speakers + Generator</td>
+                                <td>KES 15,000</td>
+                            </tr>
+                            <tr class="highlight">
+                                <td>Full Package</td>
+                                <td>Everything included</td>
+                                <td>KES 30,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sign-in link -->
+            <p class="sign-in-link">
+                I have an account, <a href="/account/logi">sign in</a>?
+            </p>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submit-btn">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+
+        </form>
+
+    </div>
+
+    <script src="/static/js/djs.js"></script>
+    <script src="/static/js/registration-otp.js"></script>
+
+</body>
+</html>

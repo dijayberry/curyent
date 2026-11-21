@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Bookings</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/booking.css">
+</head>
+<body>
+
+    <div class="booking-container">
+
+        <!-- Back to Home -->
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+
+        <!-- Sign In Button -->
+        <a href="/account/logi" class="signin-btn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1><i class="fas fa-book"></i> Bookings</h1>
+            <p>Browse available professionals and book them for your event</p>
+        </div>
+
+        <!-- Error message -->
+        {% if error %}
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Login Countdown Warning (shown only when not logged in) -->
+        <div class="alert alert-login-warning" id="login-countdown" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Please sign in to continue. Redirecting in <span class="countdown-number">20</span> seconds...</span>
+            <a href="/account/logi" class="login-now-btn">
+                <i class="fas fa-sign-in-alt"></i> Sign In Now
+            </a>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="profiles">
+                <i class="fas fa-users"></i> Available Profiles
+            </button>
+            <button class="tab-btn" data-tab="my-bookings">
+                <i class="fas fa-book"></i> My Bookings
+            </button>
+            <button class="tab-btn" data-tab="received-bookings">
+                <i class="fas fa-inbox"></i> Received Requests
+            </button>
+        </div>
+
+        <!-- ==================== PROFILES TAB ==================== -->
+        <div class="tab-content active" id="tab-profiles">
+            {% if profiles|length == 0 %}
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No profiles available yet</h3>
+                <p>Profiles will appear here once professionals register on CURYENT.</p>
+            </div>
+            {% else %}
+            <div class="profiles-grid">
+                {% for profile in profiles %}
+                <div class="profile-card" data-id="{{ profile['id'] }}" data-role="{{ profile['role'] }}" data-rate="{{ profile['daily_rate'] }}">
+                    <div class="profile-card-header">
+                        <div class="profile-avatar">
+                            {% if profile['profile_image'] %}
+                            <img src="{{ profile['profile_image'] }}" alt="{{ profile['username'] }}" class="profile-avatar-img">
+                            {% else %}
+                            <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div class="profile-info">
+                            <h3>{{ profile['username'] }}</h3>
+                            <span class="role-badge role-{{ profile['role'] }}">
+                                <i class="fas {{ 'fa-music' if profile['role'] == 'dj' else 'fa-calendar-days' if profile['role'] == 'event' else 'fa-camera' if profile['role'] == 'photographer' else 'fa-campground' if profile['role'] == 'tent' else 'fa-utensils' }}"></i>
+                                {{ profile['role'] | capitalize }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="profile-details">
+                        {% if profile['phone'] %}
+                        <div class="detail-row">
+                            <i class="fas fa-phone"></i>
+                            <span>{{ profile['phone'] }}</span>
+                        </div>
+                        {% endif %}
+                        {% if profile['location'] %}
+                        <div class="detail-row">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ profile['location'] }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="profile-rate">
+                        <div class="rate-breakdown">
+                            <div class="rate-row you-pay">
+                                <span>Price</span>
+                                <span>KES {{ (profile['daily_rate'] * 1.8) | int }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="book-btn" onclick="openBookingModal({{ profile['id'] }}, '{{ profile['role'] }}', {{ profile['daily_rate'] }}, '{{ profile['username'] }}')">
+                        <i class="fas fa-book"></i> Book Now
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ==================== MY BOOKINGS TAB ==================== -->
+        <div class="tab-content" id="tab-my-bookings">
+            {% if my_bookings|length == 0 %}
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <h3>No bookings yet</h3>
+                <p>Start by browsing available profiles and booking someone.</p>
+            </div>
+            {% else %}
+            <div class="bookings-list">
+                {% for booking in my_bookings %}
+                <div class="booking-card" id="booking-card-{{ booking['id'] }}">
+                    <div class="booking-header">
+                        <div class="booking-person">
+                            <div class="booking-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div>
+                                <h4>{{ booking['booked_username'] }}</h4>
+                                <span class="role-badge role-{{ booking['booked_role'] }}">
+                                    <i class="fas {{ 'fa-music' if booking['booked_role'] == 'dj' else 'fa-calendar-days' if booking['booked_role'] == 'event' else 'fa-camera' if booking['booked_role'] == 'photographer' else 'fa-campground' if booking['booked_role'] == 'tent' else 'fa-utensils' }}"></i>
+                                    {{ booking['booked_role'] | capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="booking-header-right">
+                            {% if booking['status'] != 'cancelled' %}
+                            <button class="delete-booking-btn" onclick="cancelBooking({{ booking['id'] }})" title="Cancel booking">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
+                            <span class="status-badge status-{{ booking['status'] }}">
+                                {% if booking['status'] == 'pending' %}
+                                    <i class="fas fa-clock"></i> Pending
+                                {% elif booking['status'] == 'accepted' %}
+                                    <i class="fas fa-check-circle"></i> Accepted
+                                {% elif booking['status'] == 'declined' %}
+                                    <i class="fas fa-times-circle"></i> Declined
+                                {% elif booking['status'] == 'cancelled' %}
+                                    <i class="fas fa-ban"></i> Cancelled
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="booking-details">
+                        <div class="booking-amount">
+                            <span>Price: KES {{ booking['total_amount'] | int }}</span>
+                        </div>
+                        {% if booking['celebration_type'] %}
+                        <div class="booking-celebration-type">
+                            <i class="fas fa-glass-cheers"></i> {{ booking['celebration_type'] }}
+                        </div>
+                        {% endif %}
+                        {% if booking['celebration_title'] %}
+                        <div class="booking-celebration-title">
+                            <i class="fas fa-heading"></i> {{ booking['celebration_title'] }}
+                        </div>
+                        {% endif %}
+                        {% if booking['venue_location'] %}
+                        <div class="booking-venue-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ booking['venue_location'] }}
+                        </div>
+                        {% endif %}
+                        <div class="booking-date">
+                            <i class="fas fa-calendar"></i> Booked: {{ booking['created_at'] }}
+                        </div>
+                        {% if booking['event_start_date'] %}
+                        <div class="booking-event-date">
+                            <i class="fas fa-calendar-alt"></i> Event: {{ booking['event_start_date'] }}{% if booking['event_end_date'] %} — {{ booking['event_end_date'] }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if booking['start_time'] or booking['end_time'] %}
+                        <div class="booking-event-time">
+                            <i class="fas fa-clock"></i> {% if booking['start_time'] %}{{ booking['start_time'] }}{% endif %} — {% if booking['end_time'] %}{{ booking['end_time'] }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if booking['attendees_count'] %}
+                        <div class="booking-attendees">
+                            <i class="fas fa-users"></i> {{ booking['attendees_count'] }} attendees
+                        </div>
+                        {% endif %}
+                        <!-- Approval & Payout Status -->
+                        {% if booking['status'] == 'accepted' %}
+                        <div class="booking-approval-status">
+                            {% if booking['approval_status'] == 'not_requested' %}
+                                <span class="approval-badge approval-not-requested">
+                                    <i class="fas fa-hourglass-start"></i> Waiting to request approval
+                                </span>
+                                <button class="approval-action-btn request-approval-btn" onclick="requestApproval({{ booking['id'] }})">
+                                    <i class="fas fa-paper-plane"></i> Request Service Approval
+                                </button>
+                            {% elif booking['approval_status'] == 'requested' %}
+                                <span class="approval-badge approval-requested">
+                                    <i class="fas fa-hourglass-half"></i> Approval requested — waiting for response
+                                </span>
+                            {% elif booking['approval_status'] == 'approved' %}
+                                <span class="approval-badge approval-approved">
+                                    <i class="fas fa-check-circle"></i> Service approved
+                                </span>
+                                {% if booking['payout_status'] == 'waiting_payout' %}
+                                    <span class="payout-badge payout-waiting">
+                                        <i class="fas fa-clock"></i> Payout processing (30-60 min)
+                                    </span>
+                                    <button class="approval-action-btn process-payout-btn" onclick="processPayout({{ booking['id'] }})">
+                                        <i class="fas fa-money-bill-wave"></i> Process Payout Now
+                                    </button>
+                                {% elif booking['payout_status'] == 'paid' %}
+                                    <span class="payout-badge payout-paid">
+                                        <i class="fas fa-check-circle"></i> Payout completed
+                                    </span>
+                                {% endif %}
+                            {% elif booking['approval_status'] == 'rejected' %}
+                                <span class="approval-badge approval-rejected">
+                                    <i class="fas fa-times-circle"></i> Service rejected
+                                </span>
+                                {% if booking['rejection_reason'] %}
+                                    <div class="rejection-reason">
+                                        <i class="fas fa-info-circle"></i> Reason: {{ booking['rejection_reason'] }}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ==================== RECEIVED BOOKINGS TAB ==================== -->
+        <div class="tab-content" id="tab-received-bookings">
+            {% if received_bookings|length == 0 %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>No booking requests</h3>
+                <p>When someone books you, their requests will appear here.</p>
+            </div>
+            {% else %}
+            <div class="bookings-list">
+                {% for booking in received_bookings %}
+                <div class="booking-card received" id="booking-card-{{ booking['id'] }}">
+                    <div class="booking-header">
+                        <div class="booking-person">
+                            <div class="booking-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div>
+                                <h4>{{ booking['booker_username'] }}</h4>
+                                <span class="role-badge role-{{ booking['booked_role'] }}">
+                                    <i class="fas {{ 'fa-music' if booking['booked_role'] == 'dj' else 'fa-calendar-days' if booking['booked_role'] == 'event' else 'fa-camera' if booking['booked_role'] == 'photographer' else 'fa-campground' if booking['booked_role'] == 'tent' else 'fa-utensils' }}"></i>
+                                    Booked as {{ booking['booked_role'] | capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="status-badge status-{{ booking['status'] }}">
+                            {% if booking['status'] == 'pending' %}
+                                <i class="fas fa-clock"></i> Pending
+                            {% elif booking['status'] == 'accepted' %}
+                                <i class="fas fa-check-circle"></i> Accepted
+                            {% elif booking['status'] == 'declined' %}
+                                <i class="fas fa-times-circle"></i> Declined
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="booking-details">
+                        <div class="booking-amount">
+                            <span>Price: KES {{ booking['daily_rate'] | int }}</span>
+                        </div>
+                        {% if booking['celebration_type'] %}
+                        <div class="booking-celebration-type">
+                            <i class="fas fa-glass-cheers"></i> {{ booking['celebration_type'] }}
+                        </div>
+                        {% endif %}
+                        {% if booking['celebration_title'] %}
+                        <div class="booking-celebration-title">
+                            <i class="fas fa-heading"></i> {{ booking['celebration_title'] }}
+                        </div>
+                        {% endif %}
+                        {% if booking['venue_location'] %}
+                        <div class="booking-venue-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ booking['venue_location'] }}
+                        </div>
+                        {% endif %}
+                        <div class="booking-date">
+                            <i class="fas fa-calendar"></i> {{ booking['created_at'] }}
+                        </div>
+                        {% if booking['event_start_date'] %}
+                        <div class="booking-event-date">
+                            <i class="fas fa-calendar-alt"></i> Event: {{ booking['event_start_date'] }}{% if booking['event_end_date'] %} — {{ booking['event_end_date'] }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if booking['start_time'] or booking['end_time'] %}
+                        <div class="booking-event-time">
+                            <i class="fas fa-clock"></i> {% if booking['start_time'] %}{{ booking['start_time'] }}{% endif %} — {% if booking['end_time'] %}{{ booking['end_time'] }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if booking['attendees_count'] %}
+                        <div class="booking-attendees">
+                            <i class="fas fa-users"></i> {{ booking['attendees_count'] }} attendees
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if booking['status'] == 'pending' %}
+                    <div class="booking-actions">
+                        <button class="accept-btn" onclick="acceptBooking({{ booking['id'] }})">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button class="decline-btn" onclick="declineBooking({{ booking['id'] }})">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'requested' %}
+                    <div class="booking-approval-section">
+                        <div class="approval-prompt">
+                            <i class="fas fa-question-circle"></i>
+                            <strong>Did you deliver the service for this booking?</strong>
+                            <p>The booker has requested service approval. Please confirm whether you delivered the service.</p>
+                        </div>
+                        <div class="approval-actions">
+                            <button class="approve-service-btn" onclick="approveService({{ booking['id'] }})">
+                                <i class="fas fa-check"></i> Yes, Service Delivered
+                            </button>
+                            <button class="reject-service-btn" onclick="openRejectModal({{ booking['id'] }})">
+                                <i class="fas fa-times"></i> No, Not Delivered
+                            </button>
+                        </div>
+                    </div>
+                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'approved' %}
+                    <div class="booking-approval-status">
+                        <span class="approval-badge approval-approved">
+                            <i class="fas fa-check-circle"></i> Service approved — payout processing
+                        </span>
+                        {% if booking['payout_status'] == 'paid' %}
+                            <span class="payout-badge payout-paid">
+                                <i class="fas fa-check-circle"></i> Payout of KES {{ booking['daily_rate'] | int }} completed
+                            </span>
+                        {% elif booking['payout_status'] == 'waiting_payout' %}
+                            <span class="payout-badge payout-waiting">
+                                <i class="fas fa-clock"></i> Payout will be processed in 30-60 minutes
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'rejected' %}
+                    <div class="booking-approval-status">
+                        <span class="approval-badge approval-rejected">
+                            <i class="fas fa-times-circle"></i> Service not delivered
+                        </span>
+                        {% if booking['rejection_reason'] %}
+                            <div class="rejection-reason">
+                                <i class="fas fa-info-circle"></i> Reason: {{ booking['rejection_reason'] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'not_requested' %}
+                    <div class="booking-approval-status">
+                        <span class="approval-badge approval-not-requested">
+                            <i class="fas fa-hourglass-start"></i> Waiting for booker to request approval
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-info-circle"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Booking Modal — select event dates and celebration details -->
+    <div class="modal-overlay" id="booking-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-book"></i> Book <span id="modal-profile-name"></span></h2>
+                <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="booking-form" onsubmit="submitBooking(event)">
+                    <input type="hidden" id="modal-booked-id">
+                    <input type="hidden" id="modal-booked-role">
+                    <input type="hidden" id="modal-daily-rate">
+
+                    <!-- Celebration Type -->
+                    <div class="form-group">
+                        <label for="celebration-type">
+                            <i class="fas fa-glass-cheers"></i> Celebration Type *
+                        </label>
+                        <select id="celebration-type" required>
+                            <option value="">Select a celebration type</option>
+                        </select>
+                        <div class="add-type-row" id="add-type-row" style="display: none;">
+                            <input type="text" id="new-celebration-type" placeholder="Enter new celebration type..." maxlength="100">
+                            <button type="button" class="add-type-btn" onclick="addCelebrationType()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Celebration Title -->
+                    <div class="form-group">
+                        <label for="celebration-title">
+                            <i class="fas fa-heading"></i> Celebration Title *
+                        </label>
+                        <input type="text" id="celebration-title" placeholder="e.g. John & Jane's Wedding" required maxlength="200">
+                    </div>
+
+                    <!-- Venue Location -->
+                    <div class="form-group">
+                        <label for="venue-location">
+                            <i class="fas fa-map-marker-alt"></i> Venue Location *
+                        </label>
+                        <input type="text" id="venue-location" placeholder="e.g. Nairobi, Westlands" required maxlength="300">
+                    </div>
+
+                    <!-- Event Start Date -->
+                    <div class="form-group">
+                        <label for="event-start-date">
+                            <i class="fas fa-calendar-day"></i> Day of Celebration *
+                        </label>
+                        <input type="date" id="event-start-date" required>
+                    </div>
+
+                    <!-- Event End Date -->
+                    <div class="form-group">
+                        <label for="event-end-date">
+                            <i class="fas fa-calendar-day"></i> Event End Date
+                        </label>
+                        <input type="date" id="event-end-date">
+                    </div>
+
+                    <!-- Start Time and End Time -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start-time">
+                                <i class="fas fa-clock"></i> Start Time *
+                            </label>
+                            <input type="time" id="start-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end-time">
+                                <i class="fas fa-clock"></i> End Time *
+                            </label>
+                            <input type="time" id="end-time" required>
+                        </div>
+                    </div>
+
+                    <!-- Attendees Count -->
+                    <div class="form-group">
+                        <label for="attendees-count">
+                            <i class="fas fa-users"></i> Number of Attendees *
+                        </label>
+                        <input type="number" id="attendees-count" placeholder="e.g. 150" min="1" required>
+                    </div>
+
+                    <div class="rate-summary">
+                        <div class="rate-row you-pay">
+                            <span>Price</span>
+                            <span id="modal-total-display">KES 0</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-btn" onclick="closeBookingModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="confirm-btn">
+                            <i class="fas fa-book"></i> Confirm Booking
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div class="modal-overlay" id="reject-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-times-circle"></i> Reject Service</h2>
+                <button class="modal-close" onclick="closeRejectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reject-form" onsubmit="submitReject(event)">
+                    <input type="hidden" id="reject-booking-id">
+
+                    <div class="form-group">
+                        <label for="rejection-reason">
+                            <i class="fas fa-info-circle"></i> Reason for Rejection *
+                        </label>
+                        <textarea id="rejection-reason" rows="4" required
+                                  placeholder="Please explain why the service was not delivered..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-btn" onclick="closeRejectModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="reject-confirm-btn">
+                            <i class="fas fa-times"></i> Submit Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set login state from server -->
+    <script>
+        var isLoggedIn = {{ 'true' if user_id else 'false' }};
+    </script>
+    <script src="/static/js/booking.js"></script>
+
+    <!-- Auto-open booking modal if provider is pre-selected from home page -->
+    {% if provider %}
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            openBookingModal({{ provider['id'] }}, '{{ provider['role'] }}', {{ provider['daily_rate'] }}, '{{ provider['username'] }}');
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

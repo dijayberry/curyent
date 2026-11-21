@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Tent Registration</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/djs.css">
+</head>
+<body>
+
+    <div class="profile-container">
+
+        <!-- Back to Home -->
+        <a href="/role" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Sign In Button -->
+        <a href="/account/logi" class="signin-btn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </a>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1>Tent Registration</h1>
+            <p>Register your tent rental business and inventory</p>
+        </div>
+
+        <!-- Registration Form -->
+        <form class="profile-form" action="/account/tents" method="POST" enctype="multipart/form-data">
+
+            <!-- ==================== PERSONAL DETAILS SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-user-circle"></i> Personal Details
+                </h2>
+
+                <div class="personal-grid">
+                    <!-- Profile Picture -->
+                    <div class="form-group picture-group full-width">
+                        <label>Profile Picture</label>
+                        <div class="picture-wrapper">
+                            <div class="picture-preview" id="picture-preview">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <input type="file" id="profile-picture" name="profile_picture" accept="image/*">
+                            <label for="profile-picture" class="picture-upload-btn">
+                                <i class="fas fa-camera"></i> Choose Profile Image
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                        <div class="field-status" id="username-status"></div>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        <div class="field-status" id="email-status"></div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone">
+                            <i class="fas fa-phone"></i> Phone
+                        </label>
+                        <div class="phone-input-wrapper">
+                            <select id="country-code" class="country-code">
+                                <option value="+93">🇦🇫 +93</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+43">🇦🇹 +43</option>
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+55">🇧🇷 +55</option>
+                                <option value="+1">🇨🇦 +1</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+213">🇩🇿 +213</option>
+                                <option value="+251">🇪🇹 +251</option>
+                                <option value="+33">🇫🇷 +33</option>
+                                <option value="+49">🇩🇪 +49</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+62">🇮🇩 +62</option>
+                                <option value="+98">🇮🇷 +98</option>
+                                <option value="+964">🇮🇶 +964</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+962">🇯🇴 +962</option>
+                                <option value="+254" selected>🇰🇪 +254</option>
+                                <option value="+60">🇲🇾 +60</option>
+                                <option value="+52">🇲🇽 +52</option>
+                                <option value="+31">🇳🇱 +31</option>
+                                <option value="+64">🇳🇿 +64</option>
+                                <option value="+92">🇵🇰 +92</option>
+                                <option value="+63">🇵🇭 +63</option>
+                                <option value="+7">🇷🇺 +7</option>
+                                <option value="+970">🇵🇸 +970</option>
+                                <option value="+250">🇷🇼 +250</option>
+                                <option value="+966">🇸🇦 +966</option>
+                                <option value="+27">🇿🇦 +27</option>
+                                <option value="+211">🇸🇸 +211</option>
+                                <option value="+234">🇳🇬 +234</option>
+                                <option value="+256">🇺🇬 +256</option>
+                                <option value="+967">🇾🇪 +967</option>
+                                <option value="+260">🇿🇲 +260</option>
+                                <option value="+263">🇿🇼 +263</option>
+                            </select>
+                            <input type="tel" id="phone" name="phone" placeholder="e.g. 712345678" required>
+                        </div>
+                        <div class="field-status" id="phone-status"></div>
+                    </div>
+
+                    <!-- Daily Rate -->
+                    <div class="form-group">
+                        <label for="daily-rate">
+                            <i class="fas fa-calendar-day"></i> Daily Rate (KES)
+                        </label>
+                        <input type="number" id="daily-rate" name="daily_rate" placeholder="Daily rate" min="0" required>
+                    </div>
+
+                    <!-- National ID No. -->
+                    <div class="form-group">
+                        <label for="national-id">
+                            <i class="fas fa-id-card"></i> National ID
+                        </label>
+                        <input type="text" id="national-id" name="national_id" placeholder="National ID number" required>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group full-width">
+                        <label for="location">
+                            <i class="fas fa-map-marker-alt"></i> Location
+                        </label>
+                        <div class="location-wrapper">
+                            <input type="text" id="location" name="location" placeholder="Enter your location" required>
+                            <button type="button" class="gps-btn" id="gps-btn" title="Auto-detect location">
+                                <i class="fas fa-location-crosshairs"></i>
+                            </button>
+                            <label class="switch-label">
+                                <input type="checkbox" id="location-switch">
+                                <span class="switch-slider"></span>
+                                <span class="switch-text">Auto-fill</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group full-width">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group full-width">
+                        <label for="confirm-password">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter your password" minlength="8" required>
+                            <button type="button" class="toggle-password" id="toggle-confirm-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-match-status" id="password-match-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== TENT DETAILS SECTION ==================== -->
+            <div class="section-block">
+                <h2 class="section-title">
+                    <i class="fas fa-campground"></i> Tent Inventory
+                </h2>
+                <p class="section-subtitle">List the tents and related equipment you offer for rent.</p>
+
+                <!-- Business Name -->
+                <div class="form-group full-width">
+                    <label for="business-name">
+                        <i class="fas fa-briefcase"></i> Business Name
+                    </label>
+                    <input type="text" id="business-name" name="business_name" placeholder="e.g. Premium Tent Rentals" required>
+                </div>
+
+                <!-- Tent Types -->
+                <div class="form-group full-width">
+                    <label>
+                        <i class="fas fa-layer-group"></i> Tent Types Available
+                    </label>
+                    <div class="amenities-grid">
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_pole" value="pole">
+                            <i class="fas fa-home"></i> Pole Tent
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_frame" value="frame">
+                            <i class="fas fa-border-all"></i> Frame Tent
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_sailcloth" value="sailcloth">
+                            <i class="fas fa-wind"></i> Sailcloth Tent
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_gazebo" value="gazebo">
+                            <i class="fas fa-umbrella"></i> Gazebo
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_roof" value="roof">
+                            <i class="fas fa-warehouse"></i> Roof Tent
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="tent_type_inflatable" value="inflatable">
+                            <i class="fas fa-balloon"></i> Inflatable Tent
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tent Sizes -->
+                <div class="form-group">
+                    <label for="tent_sizes">
+                        <i class="fas fa-ruler-combined"></i> Tent Sizes (m²)
+                    </label>
+                    <input type="text" id="tent_sizes" name="tent_sizes" placeholder="e.g. 6x6, 10x10, 20x20" required>
+                </div>
+
+                <!-- Total Tents Available -->
+                <div class="form-group">
+                    <label for="total_tents">
+                        <i class="fas fa-sort-numeric-up"></i> Total Tents Available
+                    </label>
+                    <input type="number" id="total_tents" name="total_tents" placeholder="e.g. 15" min="1" required>
+                </div>
+
+                <!-- Tent Photos -->
+                <div class="form-group full-width">
+                    <label for="tent-photos">
+                        <i class="fas fa-images"></i> Tent Photos
+                    </label>
+                    <div class="image-upload-area">
+                        <input type="file" id="tent-photos" name="tent_photos" accept="image/*" multiple>
+                        <label for="tent-photos" class="image-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload Photos
+                        </label>
+                        <div class="image-preview" id="tent-photos-preview"></div>
+                    </div>
+                </div>
+
+                <!-- Additional Equipment -->
+                <div class="form-group full-width">
+                    <label>
+                        <i class="fas fa-toolbox"></i> Additional Equipment
+                    </label>
+                    <div class="amenities-grid">
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_tables" value="tables">
+                            <i class="fas fa-chair"></i> Tables
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_chairs" value="chairs">
+                            <i class="fas fa-couch"></i> Chairs
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_lighting" value="lighting">
+                            <i class="fas fa-lightbulb"></i> Lighting
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_dancefloor" value="dancefloor">
+                            <i class="fas fa-music"></i> Dance Floor
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_heaters" value="heaters">
+                            <i class="fas fa-fire"></i> Heaters
+                        </label>
+                        <label class="amenity-checkbox">
+                            <input type="checkbox" name="equipment_sides" value="sides">
+                            <i class="fas fa-border-style"></i> Side Walls
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Delivery Available -->
+                <div class="form-group">
+                    <label for="delivery">
+                        <i class="fas fa-truck"></i> Delivery & Setup
+                    </label>
+                    <select id="delivery" name="delivery" required>
+                        <option value="">Select option</option>
+                        <option value="included">Included in price</option>
+                        <option value="extra">Extra charge</option>
+                        <option value="pickup">Pickup only</option>
+                    </select>
+                </div>
+
+                <!-- Delivery Areas -->
+                <div class="form-group">
+                    <label for="delivery-areas">
+                        <i class="fas fa-map-marked-alt"></i> Delivery Areas
+                    </label>
+                    <input type="text" id="delivery-areas" name="delivery_areas" placeholder="e.g. Nairobi, Mombasa, Kisumu">
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full-width">
+                    <label for="tent-description">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea id="tent-description" name="tent_description" placeholder="Describe your tent rental services, experience, and what makes you stand out..." rows="4" required></textarea>
+                </div>
+            </div>
+
+            <!-- Sign-in link -->
+            <p class="sign-in-link">
+                I have an account, <a href="/account/logi">sign in</a>?
+            </p>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submit-btn">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+
+        </form>
+
+    </div>
+
+    <script src="/static/js/djs.js"></script>
+    <script src="/static/js/registration-otp.js"></script>
+
+</body>
+</html>

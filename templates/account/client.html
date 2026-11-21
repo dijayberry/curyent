@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Client Registration</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/client.css">
+</head>
+<body>
+
+    <div class="profile-container">
+
+        <!-- Back to Home -->
+        <a href="/role" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Error Message -->
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1>Client Profile</h1>
+            <p>Manage your personal information and preferences</p>
+        </div>
+
+        <!-- Profile Form -->
+        <form class="profile-form" action="/account/client" method="POST" enctype="multipart/form-data">
+
+            <!-- Profile Picture -->
+            <div class="form-group picture-group">
+                <label>Profile Picture</label>
+                <div class="picture-wrapper">
+                    <div class="picture-preview" id="picture-preview">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <input type="file" id="profile-picture" name="profile_picture" accept="image/*">
+                    <label for="profile-picture" class="picture-upload-btn">
+                        <i class="fas fa-camera"></i> Choose Profile Image
+                    </label>
+                </div>
+            </div>
+
+            <!-- Username -->
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i> Username
+                </label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+
+            <!-- Email Address -->
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Email Address
+                </label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group">
+                <label for="phone">
+                    <i class="fas fa-phone"></i> Phone Number
+                </label>
+                <div class="phone-input-wrapper">
+                    <select id="country-code" class="country-code">
+                        <option value="+93">🇦🇫 +93</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+43">🇦🇹 +43</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+55">🇧🇷 +55</option>
+                        <option value="+1">🇨🇦 +1</option>
+                        <option value="+86">🇨🇳 +86</option>
+                        <option value="+213">🇩🇿 +213</option>
+                        <option value="+251">🇪🇹 +251</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+62">🇮🇩 +62</option>
+                        <option value="+98">🇮🇷 +98</option>
+                        <option value="+964">🇮🇶 +964</option>
+                        <option value="+81">🇯🇵 +81</option>
+                        <option value="+962">🇯🇴 +962</option>
+                        <option value="+254" selected>🇰🇪 +254</option>
+                        <option value="+60">🇲🇾 +60</option>
+                        <option value="+52">🇲🇽 +52</option>
+                        <option value="+31">🇳🇱 +31</option>
+                        <option value="+64">🇳🇿 +64</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+63">🇵🇭 +63</option>
+                        <option value="+7">🇷🇺 +7</option>
+                        <option value="+970">🇵🇸 +970</option>
+                        <option value="+250">🇷🇼 +250</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+27">🇿🇦 +27</option>
+                        <option value="+211">🇸🇸 +211</option>
+                        <option value="+234">🇳🇬 +234</option>
+                        <option value="+256">🇺🇬 +256</option>
+                        <option value="+967">🇾🇪 +967</option>
+                        <option value="+260">🇿🇲 +260</option>
+                        <option value="+263">🇿🇼 +263</option>
+                    </select>
+                    <input type="tel" id="phone" name="phone" placeholder="e.g. 712345678" required>
+                </div>
+                <div class="field-status" id="phone-status"></div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-group">
+                <label for="location">
+                    <i class="fas fa-map-marker-alt"></i> Location
+                </label>
+                <div class="location-wrapper">
+                    <input type="text" id="location" name="location" placeholder="Enter your location" required>
+                    <button type="button" class="gps-btn" id="gps-btn" title="Auto-detect location">
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
+                    <label class="switch-label">
+                        <input type="checkbox" id="location-switch">
+                        <span class="switch-slider"></span>
+                        <span class="switch-text">Auto-fill</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <button type="button" class="toggle-password" id="toggle-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sign-in link -->
+            <p class="sign-in-link">
+                I have an account, <a href="/account/logi">sign in</a>?
+            </p>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn" id="submit-btn">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+
+        </form>
+
+    </div>
+
+    <script>
+        // Profile picture preview
+        var pictureInput = document.getElementById('profile-picture');
+        var picturePreview = document.getElementById('picture-preview');
+
+        pictureInput.addEventListener('change', function (e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    picturePreview.style.backgroundImage = 'url(' + event.target.result + ')';
+                    picturePreview.innerHTML = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Toggle password visibility
+        var toggleBtn = document.getElementById('toggle-password');
+        var passwordInput = document.getElementById('password');
+
+        toggleBtn.addEventListener('click', function () {
+            var icon = this.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Location auto-fill with geolocation
+        var locationInput = document.getElementById('location');
+        var locationSwitch = document.getElementById('location-switch');
+        var gpsBtn = document.getElementById('gps-btn');
+
+        // When switch is toggled on, auto-detect location
+        locationSwitch.addEventListener('change', function () {
+            if (this.checked) {
+                autoDetectLocation();
+            } else {
+                // Clear auto-filled location when switch is off
+                locationInput.value = '';
+                locationInput.placeholder = 'Enter your location';
+            }
+        });
+
+        // GPS button also triggers auto-detect
+        gpsBtn.addEventListener('click', function () {
+            autoDetectLocation();
+        });
+
+        function autoDetectLocation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                locationSwitch.checked = false;
+                return;
+            }
+
+            // Show loading state
+            locationInput.placeholder = 'Detecting location...';
+            gpsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    // Use reverse geocoding to get county and town
+                    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=10&addressdetails=1')
+                        .then(function (response) { return response.json(); })
+                        .then(function (data) {
+                            if (data && data.address) {
+                                var address = data.address;
+                                // Extract town/city and county in format: County, Town
+                                var town = address.village || address.town || address.city || address.municipality || address.suburb || '';
+                                var county = address.county || address.state_district || address.state || '';
+
+                                if (county && town) {
+                                    locationInput.value = county + ', ' + town;
+                                } else if (town) {
+                                    locationInput.value = town;
+                                } else if (county) {
+                                    locationInput.value = county;
+                                } else {
+                                    locationInput.value = address.city || address.town || address.village || '';
+                                }
+                                locationInput.placeholder = 'Location auto-filled';
+                            } else {
+                                locationInput.placeholder = 'Could not detect location';
+                            }
+                            // Reset GPS button
+                            gpsBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                        })
+                        .catch(function () {
+                            locationInput.placeholder = 'Error detecting location';
+                            gpsBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                        });
+                },
+                function (error) {
+                    locationInput.placeholder = 'Location access denied';
+                    gpsBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                    locationSwitch.checked = false;
+
+                    if (error.code === 1) {
+                        alert('Location access was denied. Please enable location permissions.');
+                    } else if (error.code === 2) {
+                        alert('Location is unavailable.');
+                    } else if (error.code === 3) {
+                        alert('Location request timed out.');
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+    </script>
+    <script src="/static/js/registration-otp.js"></script>
+
+</body>
+</html>

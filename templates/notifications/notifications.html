@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Notifications</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/notifications.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="notif-header">
+        <div class="notif-brand">
+            <a href="/" class="notif-logo-link">
+                <img src="/logo.png" alt="CURYENT Logo">
+                <span>CURYENT</span>
+            </a>
+        </div>
+
+        <div class="notif-header-center">
+            <h1 class="notif-title"><i class="fas fa-bell"></i> Notifications</h1>
+            <span class="notif-unread-count" id="notif-unread-count" style="display:none;">0 New</span>
+        </div>
+
+        <div class="notif-actions">
+            <button class="notif-mark-all-btn" id="mark-all-read" title="Mark all as read" style="display:none;">
+                <i class="fas fa-check-double"></i> Mark All Read
+            </button>
+            <button class="notif-filter-btn" id="filter-btn" title="Filter">
+                <i class="fas fa-filter"></i>
+            </button>
+            <a href="/" class="notif-home-btn" title="Home">
+                <i class="fas fa-house"></i>
+            </a>
+            {% if logged_in %}
+            <a href="/profile" class="notif-profile-btn" title="Profile">
+                <i class="fas fa-user"></i>
+            </a>
+            {% else %}
+            <a href="/account/logi" class="notif-signin-btn">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Filter Panel (hidden by default) -->
+    <div class="notif-filter-panel" id="filter-panel" style="display:none;">
+        <div class="notif-filter-header">
+            <span>Filter by type</span>
+            <button class="notif-filter-close" id="filter-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="notif-filter-options">
+            <label class="notif-filter-item">
+                <input type="checkbox" value="booking" checked>
+                <i class="fas fa-book"></i> Booking
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="payment" checked>
+                <i class="fas fa-credit-card"></i> Payment
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="event" checked>
+                <i class="fas fa-calendar-days"></i> Event
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="communication" checked>
+                <i class="fas fa-comment-dots"></i> Communication
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="account" checked>
+                <i class="fas fa-lock"></i> Account
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="system" checked>
+                <i class="fas fa-bell"></i> System
+            </label>
+        </div>
+        <div class="notif-filter-priority">
+            <span>Priority</span>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="high" checked>
+                <span class="priority-dot high"></span> High
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="medium" checked>
+                <span class="priority-dot medium"></span> Medium
+            </label>
+            <label class="notif-filter-item">
+                <input type="checkbox" value="low" checked>
+                <span class="priority-dot low"></span> Low
+            </label>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="notif-main">
+
+        <!-- Loading State -->
+        <div class="notif-loading" id="notif-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading notifications...</p>
+        </div>
+
+        <!-- Login Required State -->
+        <div class="notif-login-required" id="notif-login-required" style="display:none;">
+            <i class="fas fa-lock"></i>
+            <h3>Sign in to view notifications</h3>
+            <p>Log in to see your personalized notifications and stay updated.</p>
+            <a href="/account/logi" class="notif-signin-cta">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+        </div>
+
+        <!-- Empty State -->
+        <div class="notif-empty" id="notif-empty" style="display:none;">
+            <i class="fas fa-bell-slash"></i>
+            <h3>No notifications yet.</h3>
+            <p>We'll let you know when something happens.</p>
+        </div>
+
+        <!-- Notifications Container -->
+        <div class="notif-container" id="notif-container" style="display:none;">
+            <!-- Groups will be rendered here by JS -->
+        </div>
+
+    </main>
+
+    <script>
+        const isLoggedIn = {{ 'true' if logged_in else 'false' }};
+        const userId = {{ user_id if user_id else 'null' }};
+
+        // Filter state
+        let activeFilters = {
+            types: ['booking', 'payment', 'event', 'communication', 'account', 'system'],
+            priorities: ['high', 'medium', 'low']
+        };
+
+        // Map notification_type to filter category
+        function getNotificationCategory(type) {
+            if (type.startsWith('booking_')) return 'booking';
+            if (type.startsWith('payment_')) return 'payment';
+            if (type.startsWith('event_')) return 'event';
+            if (type.startsWith('new_message') || type.startsWith('new_inquiry') || type.startsWith('new_review')) return 'communication';
+            if (type.startsWith('password_') || type.startsWith('profile_')) return 'account';
+            return 'system';
+        }
+
+        // Format time ago
+        function timeAgo(createdAt) {
+            const created = new Date(createdAt.replace(' ', 'T') + 'Z');
+            const now = new Date();
+            const diff = Math.floor((now - created) / 1000);
+
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) {
+                const minutes = Math.floor(diff / 60);
+                return minutes + ' minute' + (minutes !== 1 ? 's' : '') + ' ago';
+            }
+            if (diff < 86400) {
+                const hours = Math.floor(diff / 3600);
+                return hours + ' hour' + (hours !== 1 ? 's' : '') + ' ago';
+            }
+            if (diff < 172800) return 'Yesterday';
+            if (diff < 604800) {
+                const days = Math.floor(diff / 86400);
+                return days + ' day' + (days !== 1 ? 's' : '') + ' ago';
+            }
+            if (diff < 2592000) {
+                const weeks = Math.floor(diff / 604800);
+                return weeks + ' week' + (weeks !== 1 ? 's' : '') + ' ago';
+            }
+            return created.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Group notifications by time
+        function groupByTime(notifications) {
+            const now = new Date();
+            const today = [];
+            const yesterday = [];
+            const thisWeek = [];
+            const earlier = [];
+
+            notifications.forEach(notif => {
+                const created = new Date(notif.created_at.replace(' ', 'T') + 'Z');
+                const diffMs = now - created;
+                const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+                if (diffDays < 1) {
+                    today.push(notif);
+                } else if (diffDays < 2) {
+                    yesterday.push(notif);
+                } else if (diffDays < 7) {
+                    thisWeek.push(notif);
+                } else {
+                    earlier.push(notif);
+                }
+            });
+
+            const groups = [];
+            if (today.length) groups.push({ label: 'Today', notifications: today });
+            if (yesterday.length) groups.push({ label: 'Yesterday', notifications: yesterday });
+            if (thisWeek.length) groups.push({ label: 'This Week', notifications: thisWeek });
+            if (earlier.length) groups.push({ label: 'Earlier', notifications: earlier });
+            return groups;
+        }
+
+        // Check if notification passes current filters
+        function passesFilter(notif) {
+            const category = getNotificationCategory(notif.notification_type);
+            const typeOk = activeFilters.types.includes(category);
+            const priorityOk = activeFilters.priorities.includes(notif.priority);
+            return typeOk && priorityOk;
+        }
+
+        // Render a single notification card
+        function renderNotificationCard(notif) {
+            const unreadClass = notif.is_read ? '' : 'unread';
+            const priorityClass = notif.priority || 'low';
+            const timeAgoText = timeAgo(notif.created_at);
+
+            let actionButtons = '';
+            if (notif.action_url && notif.action_label) {
+                actionButtons = `
+                    <div class="notif-card-actions">
+                        <a href="${notif.action_url}" class="notif-action-btn primary">
+                            ${notif.action_label}
+                        </a>
+                        <button class="notif-action-btn secondary notif-mark-read-btn" data-id="${notif.id}">
+                            Mark Read
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="notif-card ${unreadClass} priority-${priorityClass}" data-id="${notif.id}" data-type="${notif.notification_type}" data-action-url="${notif.action_url || ''}">
+                    <div class="notif-card-indicator">
+                        ${!notif.is_read ? '<span class="notif-unread-dot"></span>' : ''}
+                    </div>
+                    <div class="notif-card-icon" style="color: ${notif.color || '#c9a0ff'}; background: ${notif.color || '#c9a0ff'}20;">
+                        <i class="fas ${notif.icon || 'fa-bell'}"></i>
+                    </div>
+                    <div class="notif-card-content">
+                        <div class="notif-card-header">
+                            <h4 class="notif-card-title">${notif.title}</h4>
+                            <span class="notif-card-time">${timeAgoText}</span>
+                        </div>
+                        <p class="notif-card-message">${notif.message}</p>
+                        ${actionButtons}
+                    </div>
+                    <button class="notif-card-dismiss" data-id="${notif.id}" title="Dismiss">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        // Render all notification groups
+        function renderNotifications(groups) {
+            const container = document.getElementById('notif-container');
+            container.innerHTML = '';
+
+            if (!groups || groups.length === 0) {
+                document.getElementById('notif-empty').style.display = 'flex';
+                container.style.display = 'none';
+                return;
+            }
+
+            document.getElementById('notif-empty').style.display = 'none';
+            container.style.display = 'block';
+
+            groups.forEach(group => {
+                const groupHtml = `
+                    <section class="notif-group">
+                        <h3 class="notif-group-label">${group.label}</h3>
+                        <div class="notif-group-list">
+                            ${group.notifications.map(n => renderNotificationCard(n)).join('')}
+                        </div>
+                    </section>
+                `;
+                container.insertAdjacentHTML('beforeend', groupHtml);
+            });
+
+            // Bind click events
+            container.querySelectorAll('.notif-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // Don't trigger on action buttons or dismiss
+                    if (e.target.closest('.notif-action-btn') || e.target.closest('.notif-card-dismiss')) return;
+                    const id = this.dataset.id;
+                    const actionUrl = this.dataset.actionUrl;
+                    // Mark as read, then redirect to the action URL
+                    markAsRead(id).then(() => {
+                        if (actionUrl) {
+                            window.location.href = actionUrl;
+                        }
+                    });
+                });
+            });
+
+            container.querySelectorAll('.notif-mark-read-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    markAsRead(this.dataset.id);
+                });
+            });
+
+            container.querySelectorAll('.notif-card-dismiss').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dismissNotification(this.dataset.id);
+                });
+            });
+        }
+
+        // Update unread count badge
+        function updateUnreadCount(count) {
+            const countEl = document.getElementById('notif-unread-count');
+            const markAllBtn = document.getElementById('mark-all-read');
+
+            if (count > 0) {
+                countEl.textContent = count + ' New';
+                countEl.style.display = 'inline';
+                markAllBtn.style.display = 'inline-flex';
+            } else {
+                countEl.style.display = 'none';
+                markAllBtn.style.display = 'none';
+            }
+
+            // Update nav badges
+            const badges = document.querySelectorAll('.notification-badge');
+            badges.forEach(badge => {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
+
+        // Load notifications from API
+        async function loadNotifications() {
+            if (!isLoggedIn) {
+                document.getElementById('notif-loading').style.display = 'none';
+                document.getElementById('notif-login-required').style.display = 'flex';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/notifications');
+                const data = await response.json();
+
+                if (data.success && data.groups) {
+                    // Apply filters
+                    const filteredGroups = data.groups.map(group => ({
+                        label: group.label,
+                        notifications: group.notifications.filter(passesFilter)
+                    })).filter(group => group.notifications.length > 0);
+
+                    renderNotifications(filteredGroups);
+
+                    // Load unread count
+                    const countResp = await fetch('/api/notifications/unread-count');
+                    const countData = await countResp.json();
+                    if (countData.success) {
+                        updateUnreadCount(countData.unread_count);
+                    }
+
+                    document.getElementById('notif-loading').style.display = 'none';
+                } else {
+                    throw new Error('Invalid response');
+                }
+            } catch (err) {
+                console.error('Failed to load notifications:', err);
+                document.getElementById('notif-loading').style.display = 'none';
+                document.getElementById('notif-empty').style.display = 'flex';
+            }
+        }
+
+        // Mark single notification as read
+        async function markAsRead(id) {
+            try {
+                await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+                const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+                if (card) {
+                    card.classList.remove('unread');
+                    const dot = card.querySelector('.notif-unread-dot');
+                    if (dot) dot.remove();
+                }
+                // Refresh unread count
+                const resp = await fetch('/api/notifications/unread-count');
+                const data = await resp.json();
+                if (data.success) updateUnreadCount(data.unread_count);
+                return true;
+            } catch (err) {
+                console.error('Failed to mark as read:', err);
+                return false;
+            }
+        }
+
+        // Mark all as read
+        async function markAllAsRead() {
+            try {
+                await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+                // Remove unread styling from all cards
+                document.querySelectorAll('.notif-card.unread').forEach(card => {
+                    card.classList.remove('unread');
+                    const dot = card.querySelector('.notif-unread-dot');
+                    if (dot) dot.remove();
+                });
+                updateUnreadCount(0);
+            } catch (err) {
+                console.error('Failed to mark all as read:', err);
+            }
+        }
+
+        // Dismiss/delete a notification
+        async function dismissNotification(id) {
+            try {
+                await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+                const card = document.querySelector(`.notif-card[data-id="${id}"]`);
+                if (card) {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Check if group is empty
+                        const group = card.closest('.notif-group');
+                        if (group && group.querySelectorAll('.notif-card').length === 0) {
+                            group.remove();
+                        }
+                        // Check if all notifications are gone
+                        if (document.querySelectorAll('.notif-group').length === 0) {
+                            document.getElementById('notif-container').style.display = 'none';
+                            document.getElementById('notif-empty').style.display = 'flex';
+                        }
+                    }, 300);
+                }
+                // Refresh unread count
+                const resp = await fetch('/api/notifications/unread-count');
+                const data = await resp.json();
+                if (data.success) updateUnreadCount(data.unread_count);
+            } catch (err) {
+                console.error('Failed to dismiss notification:', err);
+            }
+        }
+
+        // Filter panel toggle
+        document.getElementById('filter-btn').addEventListener('click', () => {
+            document.getElementById('filter-panel').style.display = 'block';
+        });
+
+        document.getElementById('filter-close').addEventListener('click', () => {
+            document.getElementById('filter-panel').style.display = 'none';
+        });
+
+        // Filter change handler
+        document.querySelectorAll('.notif-filter-item input').forEach(input => {
+            input.addEventListener('change', () => {
+                // Rebuild filter state
+                const typeCheckboxes = document.querySelectorAll('.notif-filter-options input');
+                const priorityCheckboxes = document.querySelectorAll('.notif-filter-priority input');
+
+                activeFilters.types = Array.from(typeCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                activeFilters.priorities = Array.from(priorityCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                // Reload and re-filter
+                loadNotifications();
+            });
+        });
+
+        // Mark all read button
+        document.getElementById('mark-all-read').addEventListener('click', markAllAsRead);
+
+        // Initial load
+        loadNotifications();
+
+        // Poll for new notifications every 30 seconds
+        setInterval(() => {
+            if (isLoggedIn) {
+                fetch('/api/notifications/unread-count')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) updateUnreadCount(data.unread_count);
+                    })
+                    .catch(() => {});
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

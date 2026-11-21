@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - CURYENT</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/logi.css">
+</head>
+<body>
+
+    <div class="login-container">
+
+        <!-- Back to Home -->
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Login Header -->
+        <div class="login-header">
+            <img src="/logo.png" alt="CURYENT" class="header-logo">
+            <h1>Sign In</h1>
+            <p>Welcome back to CURYENT</p>
+        </div>
+
+        <!-- Error Message -->
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form class="login-form" action="/account/logi" method="POST">
+
+            <!-- Email Address -->
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Email Address
+                </label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <button type="button" class="toggle-password" id="toggle-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Forgot Password link -->
+            <p class="forgot-link">
+                <a href="#" id="forgot-password-link">Forgot Password?</a>
+            </p>
+
+            <!-- Sign-in link -->
+            <p class="create-link">
+                Don't have an account? <a href="/role">Create Account</a>
+            </p>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-password-modal" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close-btn">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-header">
+                <i class="fas fa-key"></i>
+                <h2>Forgot Password</h2>
+                <p>Enter your registered email to receive a verification code on your phone</p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="forgot-email">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="forgot-email" placeholder="Enter your registered email" required>
+                    <div class="field-status" id="forgot-email-status"></div>
+                </div>
+                <button type="button" class="send-otp-btn" id="forgot-send-otp-btn">
+                    <i class="fab fa-whatsapp"></i> Send OTP via WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        var toggleBtn = document.getElementById('toggle-password');
+        var passwordInput = document.getElementById('password');
+
+        toggleBtn.addEventListener('click', function () {
+            var icon = this.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // =========================
+        // Forgot Password Modal
+        // =========================
+
+        var forgotLink = document.getElementById('forgot-password-link');
+        var forgotModal = document.getElementById('forgot-password-modal');
+        var modalCloseBtn = document.getElementById('modal-close-btn');
+        var forgotEmailInput = document.getElementById('forgot-email');
+        var forgotEmailStatus = document.getElementById('forgot-email-status');
+        var forgotSendOtpBtn = document.getElementById('forgot-send-otp-btn');
+
+        // Open modal
+        if (forgotLink) {
+            forgotLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                forgotModal.style.display = 'flex';
+            });
+        }
+
+        // Close modal
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', function () {
+                forgotModal.style.display = 'none';
+                forgotEmailStatus.className = 'field-status';
+                forgotEmailStatus.innerHTML = '';
+                forgotEmailInput.value = '';
+            });
+        }
+
+        // Close modal on overlay click
+        if (forgotModal) {
+            forgotModal.addEventListener('click', function (e) {
+                if (e.target === forgotModal) {
+                    forgotModal.style.display = 'none';
+                    forgotEmailStatus.className = 'field-status';
+                    forgotEmailStatus.innerHTML = '';
+                    forgotEmailInput.value = '';
+                }
+            });
+        }
+
+        // Send OTP for forgot password (email-based flow)
+        if (forgotSendOtpBtn) {
+            forgotSendOtpBtn.addEventListener('click', function () {
+                var email = forgotEmailInput.value.trim().toLowerCase();
+
+                // Validate email
+                if (!email) {
+                    forgotEmailStatus.className = 'field-status error';
+                    forgotEmailStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Email is required';
+                    forgotEmailInput.focus();
+                    return;
+                }
+
+                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    forgotEmailStatus.className = 'field-status error';
+                    forgotEmailStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a valid email address';
+                    forgotEmailInput.focus();
+                    return;
+                }
+
+                // Disable button and show loading
+                forgotSendOtpBtn.disabled = true;
+                forgotSendOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+                fetch('/api/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        if (data.otpSent === false) {
+                            // OTP saved but WhatsApp delivery failed — warn user but still redirect
+                            forgotEmailStatus.className = 'field-status error';
+                            forgotEmailStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'WhatsApp delivery failed. You can retry sending OTP on the next page.');
+                        } else {
+                            // OTP sent successfully
+                            forgotEmailStatus.className = 'field-status success';
+                            forgotEmailStatus.innerHTML = '<i class="fas fa-check-circle"></i> OTP sent! Redirecting...';
+                        }
+
+                        setTimeout(function () {
+                            window.location.href = '/otp?forgot=1&phone=' + encodeURIComponent(data.phone || '');
+                        }, 1500);
+                    } else if (data.redirect) {
+                        // Email not found — redirect to registration role page
+                        forgotEmailStatus.className = 'field-status error';
+                        forgotEmailStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + data.message;
+
+                        setTimeout(function () {
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    } else {
+                        // Other error (no phone, send failed, etc.)
+                        forgotSendOtpBtn.disabled = false;
+                        forgotSendOtpBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Send OTP via WhatsApp';
+                        forgotEmailStatus.className = 'field-status error';
+                        forgotEmailStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'Failed to send OTP');
+                    }
+                })
+                .catch(function () {
+                    forgotSendOtpBtn.disabled = false;
+                    forgotSendOtpBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Send OTP via WhatsApp';
+                    forgotEmailStatus.className = 'field-status error';
+                    forgotEmailStatus.innerHTML = '<i class="fas fa-times-circle"></i> Network error. Please try again.';
+                });
+            });
+        }
+
+        // Allow Enter key to send OTP
+        if (forgotEmailInput) {
+            forgotEmailInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    forgotSendOtpBtn.click();
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

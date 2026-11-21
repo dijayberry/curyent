@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CURYENT</title>
+    <link rel="stylesheet" href="/static/css/home.css">
+    <link rel="stylesheet" href="/static/css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="nav-brand">
+            <a href="/" aria-label="Go to CURYENT home page">
+                <img src="/logo.png" alt="CURYENT logo" class="nav-logo">
+                <span class="nav-title">CURYENT</span>
+            </a>
+        </div>
+        <div class="nav-links" role="menubar">
+            <a href="/" class="nav-link" role="menuitem"><i class="fas fa-home" aria-hidden="true"></i> <span>Home</span></a>
+            <a href="/bookings" class="nav-link" role="menuitem"><i class="fas fa-calendar-alt" aria-hidden="true"></i> <span>Bookings</span></a>
+            <a href="/profile" class="nav-link active" role="menuitem" aria-current="page"><i class="fas fa-user" aria-hidden="true"></i> <span>Profile</span></a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="profile-header-left">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar">
+                        {% if profile and profile.get('profile_image') %}
+                        <img src="{{ profile.profile_image }}" alt="Profile Picture" class="profile-avatar-img">
+                        {% else %}
+                        <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <span class="profile-status-indicator"></span>
+                </div>
+                <div class="profile-header-info">
+                    <div class="profile-title-row">
+                        {% if profile and profile.title %}
+                        <span class="profile-title">{{ profile.title }}</span>
+                        {% endif %}
+                        <h1 class="profile-username">{{ profile.username if profile else 'User' }}</h1>
+                    </div>
+                    <div class="profile-header-meta">
+                        <span class="profile-role-badge">{{ profile.role | upper if profile else 'ROLE' }}</span>
+                        <span class="profile-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ profile.location if profile and profile.location else 'Location not set' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-header-actions">
+                <button class="btn-header-action" id="btn-edit-profile" title="Edit Profile" aria-label="Edit your profile">
+                    <i class="fas fa-edit" aria-hidden="true"></i>
+                </button>
+                <a href="/chat" class="btn-header-action" title="Chat" aria-label="Open chat with other users">
+                    <i class="fas fa-comments" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="profile-tabs-nav" role="tablist" aria-label="Profile sections">
+            <button class="profile-tab-btn active" data-tab="personal" role="tab" aria-selected="true" aria-controls="tab-personal">
+                <i class="fas fa-id-card" aria-hidden="true"></i> Personal Details
+            </button>
+            <button class="profile-tab-btn" data-tab="ranking" role="tab" aria-selected="false" aria-controls="tab-ranking">
+                <i class="fas fa-chart-bar" aria-hidden="true"></i> Ranking
+            </button>
+            <button class="profile-tab-btn" data-tab="orders" role="tab" aria-selected="false" aria-controls="tab-orders">
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i> Orders for Me
+            </button>
+            <button class="profile-tab-btn" data-tab="posts" role="tab" aria-selected="false" aria-controls="tab-posts">
+                <i class="fas fa-camera" aria-hidden="true"></i> Posts
+            </button>
+            <button class="profile-tab-btn" data-tab="feedback" role="tab" aria-selected="false" aria-controls="tab-feedback">
+                <i class="fas fa-star" aria-hidden="true"></i> Feedback
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="profile-tab-content">
+
+            <!-- ========================= -->
+            <!-- Personal Details Section  -->
+            <!-- ========================= -->
+            <div class="profile-tab-pane active" id="tab-personal" role="tabpanel" aria-labelledby="tab-personal">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-id-card"></i> Personal Details</h2>
+                        <button class="btn-edit-profile" id="btn-edit" aria-label="Edit personal details">
+                            <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                        </button>
+                    </div>
+
+                    <!-- Profile Picture Upload -->
+                    <div class="profile-image-section">
+                        <div class="profile-image-preview" id="profile-image-preview">
+                            <img src="{{ profile.profile_image if profile and profile.get('profile_image') else '' }}" alt="Profile Picture" id="profile-image-img">
+                            <div class="profile-image-overlay" id="profile-image-overlay">
+                                <i class="fas fa-camera"></i>
+                                <span>Change Photo</span>
+                            </div>
+                        </div>
+                        <input type="file" id="profile-image-input" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" hidden>
+                        <button class="btn-upload-image" id="btn-upload-image">
+                            <i class="fas fa-camera"></i> Upload Profile Photo
+                        </button>
+                    </div>
+
+                    <div class="profile-form" id="profile-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="username"><i class="fas fa-user"></i> Username</label>
+                                <input type="text" id="username" class="form-input" value="{{ profile.username if profile else '' }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                                <input type="email" id="email" class="form-input" value="{{ profile.email if profile else '' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="phone"><i class="fas fa-phone"></i> Phone</label>
+                                <input type="tel" id="phone" class="form-input" value="{{ profile.phone if profile else '' }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="location"><i class="fas fa-map-marker-alt"></i> Location</label>
+                                <input type="text" id="location" class="form-input" value="{{ profile.location if profile else '' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="role"><i class="fas fa-briefcase"></i> Role</label>
+                                <input type="text" id="role" class="form-input" value="{{ profile.role | upper if profile else '' }}" readonly disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="daily_rate"><i class="fas fa-money-bill-wave"></i> {% if profile and profile.role == 'dj' %}Total per event{% else %}Daily Rate{% endif %}</label>
+                                <input type="number" id="daily_rate" class="form-input" value="{{ profile.role_data.daily_rate if profile and profile.get('role_data') else '' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="created_at"><i class="fas fa-calendar"></i> Member Since</label>
+                                <input type="text" id="created_at" class="form-input" value="{{ profile.created_at if profile else '' }}" readonly disabled>
+                            </div>
+                        </div>
+                        <div class="form-actions" id="form-actions" style="display: none;">
+                            <button class="btn-save" id="btn-save" aria-label="Save profile changes">
+                                <i class="fas fa-save" aria-hidden="true"></i> Save Changes
+                            </button>
+                            <button class="btn-cancel" id="btn-cancel" aria-label="Cancel editing">
+                                <i class="fas fa-times" aria-hidden="true"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= -->
+            <!-- Ranking Section           -->
+            <!-- ========================= -->
+            <div class="profile-tab-pane" id="tab-ranking" role="tabpanel" aria-labelledby="tab-ranking">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon pending-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.pending_orders if stats else 0 }}</h3>
+                            <p class="stat-label">Pending Orders</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon completed-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.completed_orders if stats else 0 }}</h3>
+                            <p class="stat-label">Completed Orders</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon declined-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.declined_orders if stats else 0 }}</h3>
+                            <p class="stat-label">Declined Orders</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon earnings-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">${{ '%.2f' | format(stats.total_earnings) if stats else '0.00' }}</h3>
+                            <p class="stat-label">Total Earnings</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-bar"></i> Order Statistics</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-star"></i> Rating Overview</h2>
+                    </div>
+                    <div class="rating-overview">
+                        <div class="rating-big">
+                            <span class="rating-number">{{ stats.avg_rating if stats else 0 }}</span>
+                            <div class="rating-stars">
+                                {% for i in range(1, 6) %}
+                                    <i class="fas fa-star {% if i <= (stats.avg_rating if stats else 0) | int %}star-filled{% else %}star-empty{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <p class="rating-count">{{ stats.total_feedback if stats else 0 }} reviews</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= -->
+            <!-- Orders for Me Section     -->
+            <!-- ========================= -->
+            <div class="profile-tab-pane" id="tab-orders" role="tabpanel" aria-labelledby="tab-orders">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-shopping-cart"></i> Orders Made for Me</h2>
+                    </div>
+                    {% if orders %}
+                        <div class="orders-list">
+                            {% for order in orders %}
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <span class="order-booker">
+                                        <i class="fas fa-user"></i> {{ order.booker_username }}
+                                    </span>
+                                    <span class="order-status status-{{ order.status }}">
+                                        {{ order.status | capitalize }}
+                                    </span>
+                                </div>
+                                <div class="order-details">
+                                    <div class="order-detail-row">
+                                        <span class="order-label">Role:</span>
+                                        <span class="order-value">{{ order.booked_role | upper }}</span>
+                                    </div>
+                                    <div class="order-detail-row">
+                                        <span class="order-label">{% if order.booked_role == 'dj' %}Total per event{% else %}Daily Rate{% endif %}:</span>
+                                        <span class="order-value">${{ '%.2f' | format(order.daily_rate) }}</span>
+                                    </div>
+                                    <div class="order-detail-row">
+                                        <span class="order-label">Total Amount:</span>
+                                        <span class="order-value">${{ '%.2f' | format(order.total_amount) }}</span>
+                                    </div>
+                                    <div class="order-detail-row">
+                                        <span class="order-label">Your Earnings:</span>
+                                        <span class="order-value earnings-highlight">${{ '%.2f' | format(order.daily_rate * 2) }}</span>
+                                    </div>
+                                    <div class="order-detail-row">
+                                        <span class="order-label">Date:</span>
+                                        <span class="order-value">{{ order.created_at }}</span>
+                                    </div>
+                                </div>
+                                {% if order.status == 'pending' %}
+                                <div class="order-actions">
+                                    <button class="btn-accept" onclick="acceptBooking({{ order.id }})" aria-label="Accept booking from {{ order.booker_username }}">
+                                        <i class="fas fa-check" aria-hidden="true"></i> Accept
+                                    </button>
+                                    <button class="btn-decline" onclick="declineBooking({{ order.id }})" aria-label="Decline booking from {{ order.booker_username }}">
+                                        <i class="fas fa-times" aria-hidden="true"></i> Decline
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h3>No Orders Yet</h3>
+                            <p>When someone books you, the orders will appear here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ========================= -->
+            <!-- Posts Section             -->
+            <!-- ========================= -->
+            <div class="profile-tab-pane" id="tab-posts" role="tabpanel" aria-labelledby="tab-posts">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-camera"></i> My Posts</h2>
+                        <label class="btn-upload-post" for="post-image-input" aria-label="Upload a new photo post">
+                            <i class="fas fa-plus" aria-hidden="true"></i> Upload Photo
+                        </label>
+                        <input type="file" id="post-image-input" accept="image/*" style="display: none;" aria-label="Select image file to upload">
+                    </div>
+
+                    <!-- Caption input (shown after selecting an image) -->
+                    <div class="post-upload-area" id="post-upload-area" style="display: none;">
+                        <div class="post-preview-container">
+                            <img id="post-preview" src="" alt="Image preview before upload">
+                            <div class="upload-progress" id="upload-progress">
+                                <div class="upload-progress-bar" id="upload-progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="post-caption-input">
+                            <input type="text" id="post-caption" class="form-input" placeholder="Add a caption..." aria-label="Post caption">
+                            <div class="post-upload-actions">
+                                <button class="btn-save" id="btn-post-submit" aria-label="Upload and post photo">
+                                    <i class="fas fa-paper-plane"></i> Post
+                                </button>
+                                <button class="btn-cancel" id="btn-post-cancel" aria-label="Cancel upload">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posts Grid -->
+                    <div class="posts-grid" id="posts-grid">
+                        {% for post in posts %}
+                        <div class="post-item" data-post-id="{{ post.id }}">
+                            <img class="post-image" src="{{ post.image_path }}" alt="{{ post.caption if post.caption else 'Post' }}">
+                            {% if post.caption %}
+                            <div class="post-caption-overlay">
+                                <p>{{ post.caption }}</p>
+                            </div>
+                            {% endif %}
+                            <div class="post-actions">
+                                <button class="btn-delete-post" onclick="deletePost({{ post.id }})" aria-label="Delete this post">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if not posts %}
+                    <div class="empty-state" id="posts-empty-state">
+                        <i class="fas fa-camera"></i>
+                        <h3>No Posts Yet</h3>
+                        <p>Upload your first photo to share with others.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ========================= -->
+            <!-- Feedback Section          -->
+            <!-- ========================= -->
+            <div class="profile-tab-pane" id="tab-feedback" role="tabpanel" aria-labelledby="tab-feedback">
+                <!-- Feedback Summary -->
+                {% if feedback and feedback|length > 0 %}
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-star"></i> Feedback Summary</h2>
+                    </div>
+                    <div class="feedback-summary">
+                        <div class="feedback-summary-left">
+                            <div class="feedback-average-rating">
+                                <span class="feedback-average-number">{{ stats.avg_rating if stats else 0 }}</span>
+                                <div class="feedback-average-stars">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= (stats.avg_rating if stats else 0) | int %}star-filled{% else %}star-empty{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                                <p class="feedback-total-reviews">{{ feedback|length }} {{ 'review' if feedback|length == 1 else 'reviews' }}</p>
+                            </div>
+                        </div>
+                        <div class="feedback-summary-right">
+                            {% for rating_value in range(5, 0, -1) %}
+                            {% set count = feedback | selectattr('rating', 'equalto', rating_value) | list | length %}
+                            {% if count > 0 %}
+                            <div class="rating-distribution-row">
+                                <span class="rating-distribution-label">{{ rating_value }} <i class="fas fa-star"></i></span>
+                                <div class="rating-distribution-bar">
+                                    <div class="rating-distribution-fill" style="width: {{ (count / feedback|length * 100) | int }}%"></div>
+                                </div>
+                                <span class="rating-distribution-count">{{ count }}</span>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Feedback List -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-comments"></i> All Feedback</h2>
+                    </div>
+                    {% if feedback %}
+                        <div class="feedback-list">
+                            {% for fb in feedback|sort(attribute='created_at', reverse=true) %}
+                            <div class="feedback-card">
+                                <div class="feedback-header">
+                                    <span class="feedback-from">
+                                        <i class="fas fa-user"></i> {{ fb.from_username }}
+                                    </span>
+                                    <span class="feedback-date">{{ fb.created_at }}</span>
+                                </div>
+                                <div class="feedback-rating">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= fb.rating %}star-filled{% else %}star-empty{% endif %}"></i>
+                                    {% endfor %}
+                                    <span class="rating-text">{{ fb.rating }}/5</span>
+                                </div>
+                                {% if fb.comment %}
+                                <p class="feedback-comment">{{ fb.comment }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-comment-dots"></i>
+                            <h3>No Feedback Yet</h3>
+                            <p>After completing orders, clients can leave feedback here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sign Out / Log Out Buttons -->
+        <div class="profile-footer">
+            <form method="POST" action="/profile/signout" id="signout-form" style="display: inline;">
+                <button type="submit" class="btn-signout" onclick="return confirm('Are you sure you want to sign out?')" aria-label="Sign out of your account">
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Sign Out
+                </button>
+            </form>
+            <form method="POST" action="/profile/logout" id="logout-form" style="display: inline;">
+                <button type="submit" class="btn-logout" onclick="return confirm('Are you sure you want to log out?')" aria-label="Log out of your account">
+                    <i class="fas fa-door-open" aria-hidden="true"></i> Log Out
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-info-circle"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Image Popup Modal -->
+    <div class="image-modal" id="image-modal">
+        <div class="image-modal-content">
+            <span class="image-modal-close" id="image-modal-close">&times;</span>
+            <img class="image-modal-image" id="image-modal-image" src="" alt="Full size image">
+            <div class="image-modal-caption" id="image-modal-caption"></div>
+        </div>
+    </div>
+
+    <!-- Chart.js for ranking graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        var statsData = {{ stats | tojson if stats else '{}' }};
+    </script>
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>

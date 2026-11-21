@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Event Networking</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/home.css">
+</head>
+<body>
+    <header class="home-header">
+        <div class="header-name-container">
+            <h1 class="name-logo">
+                <img src="/logo.png" alt="CURYENT Logo">
+                CURYENT
+            </h1>
+        </div>
+
+        <div class="nav-bar">
+            <!-- Home icon with dropdown -->
+            <div class="home-btn">
+                <a href="/"><i class="fas fa-house"></i> Home</a>
+                <ul class="home-dropdown">
+                    <li><a href="#djs"><i class="fas fa-music"></i>DJs</a></li>
+                    <li><a href="#events"><i class="fas fa-calendar-days"></i>Events</a></li>
+                    <li><a href="#photographers"><i class="fas fa-camera"></i>Photographers</a></li>
+                    <li><a href="#tents"><i class="fas fa-campground"></i>Tents</a></li>
+                    <li><a href="#caterer"><i class="fas fa-utensils"></i>Caterer</a></li>
+                </ul>
+            </div>
+
+            <!-- Search bar -->
+            <div class="search-bar">
+                <div class="search-container">
+                    <input
+                        type="text"
+                        id="search-input"
+                        placeholder="Search DJs, Events, Photographers, Tents..."
+                        autocomplete="off"
+                    >
+                    <button type="button" id="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="search-results" id="search-results"></div>
+                </div>
+            </div>
+
+            <!-- Menu button: shown only on small screens -->
+            <div class="nav-btn">
+                <button><i class="fas fa-bars"></i> Menu</button>
+                <ul class="nav-dropdown">
+                    <li><a href="/bookings"><i class="fas fa-book"></i>Bookings</a></li>
+                    <li><a href="/chat"><i class="fas fa-comments"></i>Chat <span class="notification-badge" id="chat-badge-mobile" style="display:none;">0</span></a></li>
+                    <li><a href="/notifications"><i class="fas fa-bell"></i>Notifications <span class="notification-badge" id="notif-badge-mobile" style="display:none;">0</span></a></li>
+                    <li><a href="/account/logi"><i class="fas fa-sign-in-alt"></i>Sign In</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Nav links: shown directly on big screens -->
+        <ul class="nav-links">
+            <li><a href="/bookings"><i class="fas fa-book"></i>Bookings</a></li>
+            <li><a href="/chat"><i class="fas fa-comments"></i>Chat <span class="notification-badge" id="chat-badge-desktop" style="display:none;">0</span></a></li>
+            <li><a href="/notifications"><i class="fas fa-bell"></i>Notifications <span class="notification-badge" id="notif-badge-desktop" style="display:none;">0</span></a></li>
+            <li><a href="/account"><i class="fas fa-user"></i>Account</a></li>
+        </ul>
+
+        <!-- Profile section: shown only on big screens -->
+        {% if logged_in %}
+        <a href="/profile" class="header-profile-link">
+            <div class="header-profile">
+                <div class="header-profile-pic">
+                    {% if profile_image %}
+                    <img src="{{ profile_image }}" alt="Profile Picture">
+                    {% else %}
+                    <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div class="header-profile-info">
+                    <span class="header-profile-name">{{ username }}</span>
+                    <span class="header-profile-location"><i class="fas fa-map-marker-alt"></i> {{ location }}</span>
+                </div>
+            </div>
+        </a>
+        {% else %}
+        <div class="header-profile">
+            <a href="/account/logi" class="header-sign-in-link">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </a>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- account choose as role -->
+    <div class="role" id="role">
+        <div class="role-overlay">
+            <div class="role-card">
+                <h2><i class="fas fa-user-circle"></i> Choose Your Role</h2>
+                <div class="role-grid">
+                    <a href="/account/client" class="role-item">
+                        <i class="fas fa-user"></i>
+                        <span>Client</span>
+                    </a>
+                    <a href="/account/djs" class="role-item">
+                        <i class="fas fa-music"></i>
+                        <span>DJ</span>
+                    </a>
+                    <a href="/account/event" class="role-item">
+                        <i class="fas fa-calendar-days"></i>
+                        <span>Event</span>
+                    </a>
+                    <a href="/account/photographer" class="role-item">
+                        <i class="fas fa-camera"></i>
+                        <span>Photographer</span>
+                    </a>
+                    <a href="/account/tents" class="role-item">
+                        <i class="fas fa-campground"></i>
+                        <span>Tents</span>
+                    </a>
+                    <a href="/account/caterer" class="role-item">
+                        <i class="fas fa-utensils"></i>
+                        <span>Caterer</span>
+                    </a>
+                </div>
+                <button class="role-close" id="role-close"><i class="fas fa-times"></i> Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Sections -->
+    <main class="role-sections">
+        <!-- DJs Section -->
+        <section class="role-section" id="djs">
+            <div class="role-section-header">
+                <div>
+                    <h2><i class="fas fa-music"></i> DJs</h2>
+                    <p>Find the best DJs for your event</p>
+                </div>
+                <div class="view-all-wrapper">
+                    <button class="view-all-btn" data-role="dj">
+                        <i class="fas fa-th"></i> View All
+                    </button>
+                    <div class="all-users-dropdown" id="dj-dropdown">
+                        <div class="profile-grid">
+                            <button class="dropdown-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-container" id="dj-slideshow">
+                <button class="slide-arrow slide-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="slide-track-wrapper">
+                    <div class="slide-track">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading DJs...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="slide-arrow slide-next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-dots"></div>
+            </div>
+        </section>
+
+        <!-- Events Section -->
+        <section class="role-section" id="events">
+            <div class="role-section-header">
+                <div>
+                    <h2><i class="fas fa-calendar-days"></i> Events</h2>
+                    <p>Discover amazing event venues</p>
+                </div>
+                <div class="view-all-wrapper">
+                    <button class="view-all-btn" data-role="event">
+                        <i class="fas fa-th"></i> View All
+                    </button>
+                    <div class="all-users-dropdown" id="events-dropdown">
+                        <div class="profile-grid">
+                            <button class="dropdown-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-container" id="events-slideshow">
+                <button class="slide-arrow slide-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="slide-track-wrapper">
+                    <div class="slide-track">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading Events...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="slide-arrow slide-next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-dots"></div>
+            </div>
+        </section>
+
+        <!-- Photographers Section -->
+        <section class="role-section" id="photographers">
+            <div class="role-section-header">
+                <div>
+                    <h2><i class="fas fa-camera"></i> Photographers</h2>
+                    <p>Capture your special moments</p>
+                </div>
+                <div class="view-all-wrapper">
+                    <button class="view-all-btn" data-role="photographer">
+                        <i class="fas fa-th"></i> View All
+                    </button>
+                    <div class="all-users-dropdown" id="photographers-dropdown">
+                        <div class="profile-grid">
+                            <button class="dropdown-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-container" id="photographers-slideshow">
+                <button class="slide-arrow slide-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="slide-track-wrapper">
+                    <div class="slide-track">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading Photographers...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="slide-arrow slide-next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-dots"></div>
+            </div>
+        </section>
+
+        <!-- Tents Section -->
+        <section class="role-section" id="tents">
+            <div class="role-section-header">
+                <div>
+                    <h2><i class="fas fa-campground"></i> Tents</h2>
+                    <p>Tent rental services for your event</p>
+                </div>
+                <div class="view-all-wrapper">
+                    <button class="view-all-btn" data-role="tents">
+                        <i class="fas fa-th"></i> View All
+                    </button>
+                    <div class="all-users-dropdown" id="tents-dropdown">
+                        <div class="profile-grid">
+                            <button class="dropdown-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-container" id="tents-slideshow">
+                <button class="slide-arrow slide-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="slide-track-wrapper">
+                    <div class="slide-track">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading Tents...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="slide-arrow slide-next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-dots"></div>
+            </div>
+        </section>
+
+        <!-- Caterer Section -->
+        <section class="role-section" id="caterer">
+            <div class="role-section-header">
+                <div>
+                    <h2><i class="fas fa-utensils"></i> Caterer</h2>
+                    <p>Delicious catering for your event</p>
+                </div>
+                <div class="view-all-wrapper">
+                    <button class="view-all-btn" data-role="caterer">
+                        <i class="fas fa-th"></i> View All
+                    </button>
+                    <div class="all-users-dropdown" id="caterer-dropdown">
+                        <div class="profile-grid">
+                            <button class="dropdown-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slideshow-container" id="caterer-slideshow">
+                <button class="slide-arrow slide-prev"><i class="fas fa-chevron-left"></i></button>
+                <div class="slide-track-wrapper">
+                    <div class="slide-track">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading Caterers...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="slide-arrow slide-next"><i class="fas fa-chevron-right"></i></button>
+                <div class="slide-dots"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Pass logged-in state to JS
+        window.__homeLoggedIn = {{ 'true' if logged_in else 'false' }};
+    </script>
+    <script src="/static/js/home.js"></script>
+</body>
+</html>
