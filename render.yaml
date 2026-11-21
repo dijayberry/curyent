@@ -14,12 +14,12 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: WASENDER_API_KEY
-        sync: false
+        value: 6d2cd6b6f85f4defd517d1b6b8cba0f42c5f3cf957bad3a91de74b7b4c16ab7a
       - key: MPESA_CONSUMER_KEY
-        sync: false
+        value: xtaExvFW27YoYlReLwIqGAFBf6PfLPBhlmx0PQ1TK9V6Wb7s
       - key: MPESA_CONSUMER_SECRET
-        sync: false
+        value: Go0k2BkhrAlKuuAUOWh6dPUSiE6kWhRnSA6bI2mGWrghwZUXjvJyQyC7mZejLii7
       - key: MPESA_SHORTCODE
-        sync: false
-      - key: MPESA_CALLBACK_URL
-        value: https://curyent.onrender.com/api/mpesa/callback
+        value: '5735986'
+      - key: MPESA_ENVIRONMENT
+        value: production

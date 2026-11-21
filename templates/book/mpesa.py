@@ -22,13 +22,14 @@ from datetime import datetime
 # =========================
 # M-Pesa Configuration
 # =========================
-# Load from environment variables, fall back to defaults for sandbox
+# Load from environment variables, fall back to real production defaults
+# Curyent Till Number: 5735986 | Phone: 0705950970
 MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'xtaExvFW27YoYlReLwIqGAFBf6PfLPBhlmx0PQ1TK9V6Wb7s')
 MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'Go0k2BkhrAlKuuAUOWh6dPUSiE6kWhRnSA6bI2mGWrghwZUXjvJyQyC7mZejLii7')
-MPESA_SHORT_CODE = os.environ.get('MPESA_SHORT_CODE', '5735986')  # Safaricom test Paybill
-MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')  # Safaricom test passkey
-MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'production')  # 'sandbox' or 'production'
-MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://curyent.onrender.com/api/mpesa/callback')
+MPESA_SHORT_CODE = os.environ.get('MPESA_SHORT_CODE', '5735986')  # Curyent Paybill Till
+MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')  # Production passkey
+MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'production')  # Live production
+MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', '')  # Auto-detected at runtime if empty
 
 # B2C initiator credentials (for payouts)
 MPESA_B2C_INITIATOR_NAME = os.environ.get('MPESA_B2C_INITIATOR_NAME', 'YOUR_B2C_INITIATOR')
@@ -40,13 +41,33 @@ B2C_COMMAND_UTILITY_BILL = 'UtilityBill'
 B2C_COMMAND_SALARY_PAYMENT = 'SalaryPayment'
 
 
+def get_callback_url():
+    """
+    Get the M-Pesa callback URL.
+    Uses the configured URL if set, otherwise auto-detects from the Flask request context.
+    """
+    if MPESA_CALLBACK_URL:
+        return MPESA_CALLBACK_URL
+
+    # Auto-detect from Flask request context
+    try:
+        from flask import request
+        base_url = request.url_root.rstrip('/')
+        return base_url + '/api/mpesa/callback'
+    except RuntimeError:
+        # No request context (e.g., background thread) — use a default
+        return 'https://curyent.onrender.com/api/mpesa/callback'
+
+
 def is_configured():
     """Check if M-Pesa credentials are properly configured."""
+    # The default credentials ARE the real production credentials for Curyent
+    # Till: 5735986, Phone: 0705950970
     return (
-        MPESA_CONSUMER_KEY != 'xtaExvFW27YoYlReLwIqGAFBf6PfLPBhlmx0PQ1TK9V6Wb7s' and
-        MPESA_CONSUMER_SECRET != 'Go0k2BkhrAlKuuAUOWh6dPUSiE6kWhRnSA6bI2mGWrghwZUXjvJyQyC7mZejLii7' and
-        MPESA_SHORT_CODE != '5735986' and
-        MPESA_PASSKEY != 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+        MPESA_CONSUMER_KEY and
+        MPESA_CONSUMER_SECRET and
+        MPESA_SHORT_CODE and
+        MPESA_PASSKEY
     )
 
 
@@ -123,7 +144,7 @@ def _send_stk_push_in_background(phone_number, amount, account_reference, transa
             phone_number=normalized_phone,
             account_reference=account_reference,
             transaction_desc=transaction_desc,
-            callback_url=MPESA_CALLBACK_URL,
+            callback_url=get_callback_url(),
             transaction_type='CustomerPayBillOnline'
         )
 
@@ -276,9 +297,9 @@ def initiate_b2c_payout(recipient_phone, amount, result_url=None, queue_time_url
     print(f'[M-Pesa B2C] Initiating payout of KES {amount} to {normalized_phone}')
 
     if result_url is None:
-        result_url = f'{MPESA_CALLBACK_URL}/b2c/result'
+        result_url = f'{get_callback_url()}/b2c/result'
     if queue_time_url is None:
-        queue_time_url = f'{MPESA_CALLBACK_URL}/b2c/timeout'
+        queue_time_url = f'{get_callback_url()}/b2c/timeout'
 
     # Send B2C in a background thread
     thread = threading.Thread(
