@@ -16,6 +16,7 @@ Configuration:
     MPESA_CALLBACK_URL      — Public URL for C2B callback (e.g., https://yourdomain.com/api/mpesa/callback)
 """
 import os
+import base64
 import threading
 from datetime import datetime
 
@@ -102,61 +103,91 @@ def normalize_phone_number(phone_number: str) -> str:
     return cleaned
 
 
+def _get_access_token():
+    """
+    Get M-Pesa OAuth access token using requests.
+    """
+    import requests
+    from datetime import datetime
+
+    if MPESA_ENVIRONMENT == 'production':
+        base_url = 'https://api.safaricom.co.ke'
+    else:
+        base_url = 'https://sandbox.safaricom.co.ke'
+
+    credentials = f'{MPESA_CONSUMER_KEY}:{MPESA_CONSUMER_SECRET}'
+    encoded_creds = base64.b64encode(credentials.encode()).decode()
+
+    response = requests.get(
+        f'{base_url}/oauth/v1/generate?grant_type=client_credentials',
+        headers={'Authorization': f'Basic {encoded_creds}'},
+        timeout=10
+    )
+
+    if response.status_code == 200:
+        return response.json().get('access_token')
+    else:
+        print(f'[M-Pesa] Failed to get access token: {response.text}')
+        return None
+
+
 def _send_stk_push_in_background(phone_number, amount, account_reference, transaction_desc, booking_id=None):
     """
-    Background thread function to send STK Push via M-Pesa SDK.
+    Background thread function to send STK Push using requests.
     Runs asynchronously so it doesn't block the Flask request.
     """
+    import requests
+    from datetime import datetime
+
     try:
-        import mpesa
-        from mpesa import Config, STKPush, Auth
-
-        # Configure M-Pesa SDK
-        config = Config()
-        config.CLIENT_KEY = MPESA_CONSUMER_KEY
-        config.CLIENT_SECRET = MPESA_CONSUMER_SECRET
-
-        if MPESA_ENVIRONMENT == 'production':
-            config.BASE_URL = 'https://api.safaricom.co.ke/mpesa'
-        else:
-            config.BASE_URL = 'https://sandbox.safaricom.co.ke/mpesa'
-
         # Get access token
-        auth = Auth(config)
-        token_response = auth.generate_access_token()
-
-        if 'error' in token_response:
-            print(f'[M-Pesa STK] Failed to get access token: {token_response}')
+        access_token = _get_access_token()
+        if not access_token:
+            print('[M-Pesa STK] Failed to get access token')
             return
 
-        config.access_token = token_response.get('access_token')
+        if MPESA_ENVIRONMENT == 'production':
+            base_url = 'https://api.safaricom.co.ke/mpesa'
+        else:
+            base_url = 'https://sandbox.safaricom.co.ke/mpesa'
 
-        # Create STK Push payload
-        stk = STKPush(config)
         normalized_phone = normalize_phone_number(phone_number)
 
-        payload = stk.create_payload(
-            short_code=MPESA_SHORT_CODE,
-            pass_key=MPESA_PASSKEY,
-            amount=int(amount),
-            party_a=normalized_phone,
-            party_b=MPESA_SHORT_CODE,
-            phone_number=normalized_phone,
-            account_reference=account_reference,
-            transaction_desc=transaction_desc,
-            callback_url=get_callback_url(),
-            transaction_type='CustomerPayBillOnline'
-        )
+        # Generate timestamp and password
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password_string = f'{MPESA_SHORT_CODE}{MPESA_PASSKEY}{timestamp}'
+        password = base64.b64encode(password_string.encode()).decode()
+
+        # Build STK Push payload
+        payload = {
+            'BusinessShortCode': MPESA_SHORT_CODE,
+            'Password': password,
+            'Timestamp': timestamp,
+            'TransactionType': 'CustomerPayBillOnline',
+            'Amount': int(amount),
+            'PartyA': normalized_phone,
+            'PartyB': MPESA_SHORT_CODE,
+            'PhoneNumber': normalized_phone,
+            'CallBackURL': get_callback_url(),
+            'AccountReference': account_reference,
+            'TransactionDesc': transaction_desc
+        }
 
         # Send STK Push
-        response = stk.send_stk_push(payload)
+        response = requests.post(
+            f'{base_url}/stkpush/v1/processrequest',
+            json=payload,
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=15
+        )
 
-        if 'CheckoutRequestID' in response:
-            print(f'[M-Pesa STK] Push sent successfully. RequestID: {response["CheckoutRequestID"]}')
-            print(f'[M-Pesa STK] ResultCode: {response.get("ResultCode", "N/A")}')
-            print(f'[M-Pesa STK] ResultDesc: {response.get("ResultDesc", "N/A")}')
+        result = response.json()
+        if 'CheckoutRequestID' in result:
+            print(f'[M-Pesa STK] Push sent successfully. RequestID: {result["CheckoutRequestID"]}')
+            print(f'[M-Pesa STK] ResultCode: {result.get("ResultCode", "N/A")}')
+            print(f'[M-Pesa STK] ResultDesc: {result.get("ResultDesc", "N/A")}')
         else:
-            print(f'[M-Pesa STK] Error: {response}')
+            print(f'[M-Pesa STK] Error: {result}')
 
     except Exception as e:
         print(f'[M-Pesa STK] Failed to send STK Push: {str(e)}')
@@ -208,34 +239,21 @@ def initiate_stk_push(phone_number, amount, account_reference='CURYENT', transac
 
 def _send_b2c_in_background(queues_account, recipient_phone, amount, result_url, queue_time_url, command_id=B2C_COMMAND_BUSINESS_PAYMENT, occasion='Service Payout'):
     """
-    Background thread function to send B2C payment via M-Pesa SDK.
+    Background thread function to send B2C payment using requests.
     """
+    import requests
+
     try:
-        import mpesa
-        from mpesa import Config, B2C, Auth
-
-        # Configure M-Pesa SDK
-        config = Config()
-        config.CLIENT_KEY = MPESA_CONSUMER_KEY
-        config.CLIENT_SECRET = MPESA_CONSUMER_SECRET
-
-        if MPESA_ENVIRONMENT == 'production':
-            config.BASE_URL = 'https://api.safaricom.co.ke/mpesa'
-        else:
-            config.BASE_URL = 'https://sandbox.safaricom.co.ke/mpesa'
-
         # Get access token
-        auth = Auth(config)
-        token_response = auth.generate_access_token()
-
-        if 'error' in token_response:
-            print(f'[M-Pesa B2C] Failed to get access token: {token_response}')
+        access_token = _get_access_token()
+        if not access_token:
+            print('[M-Pesa B2C] Failed to get access token')
             return
 
-        config.access_token = token_response.get('access_token')
-
-        # Create and send B2C payment
-        b2c = B2C(config)
+        if MPESA_ENVIRONMENT == 'production':
+            base_url = 'https://api.safaricom.co.ke/mpesa'
+        else:
+            base_url = 'https://sandbox.safaricom.co.ke/mpesa'
 
         payload = {
             'InitiatorName': MPESA_B2C_INITIATOR_NAME,
@@ -250,12 +268,18 @@ def _send_b2c_in_background(queues_account, recipient_phone, amount, result_url,
             'Occasion': occasion
         }
 
-        response = b2c.make_payment(payload)
+        response = requests.post(
+            f'{base_url}/b2c/v1/paymentrequest',
+            json=payload,
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=15
+        )
 
-        if 'ConversationID' in response or 'ResultCode' in response:
-            print(f'[M-Pesa B2C] Payment initiated. Response: {response}')
+        result = response.json()
+        if 'ConversationID' in result or 'ResultCode' in result:
+            print(f'[M-Pesa B2C] Payment initiated. Response: {result}')
         else:
-            print(f'[M-Pesa B2C] Error: {response}')
+            print(f'[M-Pesa B2C] Error: {result}')
 
     except Exception as e:
         print(f'[M-Pesa B2C] Failed to send B2C payment: {str(e)}')
