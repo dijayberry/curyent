@@ -66,7 +66,79 @@ The following environment variables can be configured:
 | `MPESA_CALLBACK_URL` | Public URL for M-Pesa C2B callback | Optional |
 | `SECRET_KEY` | Flask secret key for sessions | Optional (defaults to built-in key) |
 
-## Deployment to Render
+## Deployment to PythonAnywhere (Free, No Credit Card)
+
+PythonAnywhere is a free Python hosting platform that doesn't require a credit card.
+
+### Step 1: Create a PythonAnywhere Account
+
+1. Go to [https://www.pythonanywhere.com/](https://www.pythonanywhere.com/)
+2. Click **"Sign up"** (top right)
+3. Choose the **"Beginner"** plan (it's **free**)
+4. Fill in your username (e.g., `dijayberry`), email, and password
+5. Check your email to confirm your account
+6. Log in to PythonAnywhere
+
+### Step 2: Upload Your Code
+
+1. In PythonAnywhere, click the **"Consoles"** tab
+2. Click **"Open bash"** to open a terminal
+3. Run these commands:
+   ```bash
+   git clone https://github.com/dijayberry/curyent.git
+   cd curyent
+   pip install -r requirements.txt
+   ```
+
+### Step 3: Configure the Web App
+
+1. Click the **"Web"** tab
+2. Click **"Add a new web app"**
+3. Choose **"Manual configuration"** and select **Python 3.11**
+4. Click **"Configure"**
+5. Click the **"WSGI configuration file"** link
+6. Replace all the content with the contents of `wsgi.py` from your project
+7. Click **"Save"**
+
+### Step 4: Set Environment Variables
+
+1. In the **"Web"** tab, click **"Variables"** under **"Code"** section
+2. Add these environment variables:
+   - `MPESA_CONSUMER_KEY`: `xtaExvFW27YoYlReLwIqGAFBf6PfLPBhlmx0PQ1TK9V6Wb7s`
+   - `MPESA_CONSUMER_SECRET`: `Go0k2BkhrAlKuuAUOWh6dPUSiE6kWhRnSA6bI2mGWrghwZUXjvJyQyC7mZejLii7`
+   - `MPESA_SHORT_CODE`: `5735986`
+   - `MPESA_ENVIRONMENT`: `production`
+   - `WASENDER_API_KEY`: `6d2cd6b6f85f4defd517d1b6b8cba0f42c5f3cf957bad3a91de74b7b4c16ab7a`
+3. Click **"Save"**
+
+### Step 5: Reload the Web App
+
+1. Click the **"Reload"** button at the top of the **"Web"** tab
+2. Your app will be live at: **https://dijayberry.pythonanywhere.com**
+
+### Free Domain
+
+Your app will be available at:
+
+**https://dijayberry.pythonanywhere.com**
+
+This free domain includes:
+- Automatic HTTPS/SSL certificate
+- No credit card required
+- Free forever (with monthly quota limits)
+
+### Setting up Custom Domain (www.curyent.com) — Optional
+
+If you later want to use a custom domain like `www.curyent.com`:
+
+1. **In PythonAnywhere**, go to the **"Web"** tab → **"Domains"** section
+2. Add your custom domain
+3. **Configure DNS** at your domain registrar to point to PythonAnywhere's servers
+4. PythonAnywhere will provide the DNS records you need
+
+## Deployment to Render (Requires Credit Card)
+
+> **Note:** Render requires a credit card even for the free tier. See PythonAnywhere above for a free alternative.
 
 ### Option 1: Manual Deployment
 
@@ -75,7 +147,7 @@ The following environment variables can be configured:
 3. **Click "New +" → "Web Service"**
 4. **Connect your GitHub repository**
 5. **Configure**:
-   - **Name**: curuent
+   - **Name**: curyent
    - **Environment**: Python
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn curyent:app --bind 0.0.0.0:$PORT`
@@ -90,45 +162,6 @@ The following environment variables can be configured:
 3. **Click "New +" → "From Git Repo"**
 4. **Select your repository**
 5. Render will automatically detect and apply the configuration
-
-### Free Domain (No Cost)
-
-Render automatically assigns a free subdomain to your app. After deployment, your app will be available at:
-
-**https://curyent.onrender.com**
-
-This free domain includes:
-- Automatic HTTPS/SSL certificate
-- No setup required — works immediately after deployment
-- M-Pesa callback URL is pre-configured to `https://curyent.onrender.com/api/mpesa/callback`
-
-### Setting up Custom Domain (www.curyent.com) — Optional
-
-If you later want to use a custom domain like `www.curyent.com`, follow these steps:
-
-1. **Add the domain in Render**:
-   - Go to your service in the Render Dashboard
-   - Click on the **"Settings"** tab
-   - Scroll to **"Custom Domains"**
-   - Click **"Add Custom Domain"**
-   - Enter `www.curyent.com` and click **Add**
-
-2. **Configure DNS**:
-   - Render will provide a CNAME record value (e.g., `xyz-abc.onrender.com`)
-   - Go to your domain registrar's DNS settings for `curyent.com`
-   - Add a **CNAME record**:
-     - **Type**: CNAME
-     - **Name**: `www`
-     - **Value**: the CNAME value provided by Render
-   - Wait for DNS propagation (usually 5-30 minutes)
-
-3. **Enable HTTPS**:
-   - Render automatically provisions SSL certificates for custom domains
-   - After DNS is configured, Render will issue the certificate automatically
-   - Your site will be accessible at `https://www.curyent.com`
-
-4. **Update M-Pesa callback URL**:
-   - Update `MPESA_CALLBACK_URL` in Render Dashboard under **Environment** variables to `https://www.curyent.com/api/mpesa/callback`
 
 ## Database Notes
 
