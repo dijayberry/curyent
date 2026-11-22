@@ -20,7 +20,7 @@ import africastalking
 
 AFRICASTALKING_USERNAME = os.environ.get('AFRICASTALKING_USERNAME', 'cury')
 AFRICASTALKING_API_KEY = os.environ.get('AFRICASTALKING_API_KEY', 'atsk_3bcc67f1e1091266aa496d3a8be27b1644f2c2305246eadec2989517cbe2d6b1fd9d07a6')
-SMS_SENDER_ID = 'Curyent'
+SMS_SENDER_ID = ''  # Empty uses Africa's Talking default; register 'Curyent' as sender ID later at africastalking.com
 
 # Initialize Africa's Talking
 if AFRICASTALKING_API_KEY:
@@ -88,10 +88,35 @@ def _send_via_api(phone_number, message_body):
         return {'success': True, 'message': 'Message logged (Africa\'s Talking not configured)'}
 
     try:
-        response = sms.send(message_body, [phone_number], sender_id=SMS_SENDER_ID)
+        # Build send kwargs - only include sender_id if it's set
+        send_kwargs = {'sender_id': SMS_SENDER_ID} if SMS_SENDER_ID else {}
+        response = sms.send(message_body, [phone_number], **send_kwargs)
         print(f'[SMS] Response: {response}')
         
-        # Check if message was sent successfully
+        # Handle Africa's Talking response format
+        if response and 'SMSMessageData' in response:
+            msg_data = response['SMSMessageData']
+            # Check for error messages
+            if msg_data.get('Message') and msg_data['Message'] not in ('', 'Success'):
+                error_msg = msg_data['Message']
+                print(f'[SMS] Error: {error_msg}')
+                return {'success': False, 'message': f'SMS error: {error_msg}'}
+            # Check recipients
+            recipients = msg_data.get('Recipients', [])
+            if recipients:
+                for recipient in recipients:
+                    if recipient.get('statusCode') == '000':
+                        print(f'[SMS] Message sent successfully to {phone_number}')
+                        return {'success': True, 'message': 'Message sent via SMS'}
+                    else:
+                        error_msg = recipient.get('errorMessage', 'Unknown error')
+                        print(f'[SMS] Error for {phone_number}: {error_msg}')
+                        return {'success': False, 'message': f'SMS error: {error_msg}'}
+            # No recipients but no error - might be queued
+            print(f'[SMS] Message sent successfully to {phone_number}')
+            return {'success': True, 'message': 'Message sent via SMS'}
+        
+        # Fallback for other response formats
         if response and 'Recipients' in response:
             for recipient in response['Recipients']:
                 if recipient.get('statusCode') == '000':
@@ -101,11 +126,6 @@ def _send_via_api(phone_number, message_body):
                     error_msg = recipient.get('errorMessage', 'Unknown error')
                     print(f'[SMS] Error for {phone_number}: {error_msg}')
                     return {'success': False, 'message': f'SMS error: {error_msg}'}
-        
-        # Fallback: if response format is different, check overall status
-        if response and response.get('status') == 'Success':
-            print(f'[SMS] Message sent successfully to {phone_number}')
-            return {'success': True, 'message': 'Message sent via SMS'}
         
         print(f'[SMS] Unexpected response format: {response}')
         return {'success': False, 'message': f'Unexpected API response'}
