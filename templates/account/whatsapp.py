@@ -1,27 +1,33 @@
 import os
 import random
-import requests
+import africastalking
 
 
 # =========================
-# Wasender API Configuration
+# Africa's Talking SMS Configuration
 # =========================
-# Wasender API sends WhatsApp messages via HTTP — no browser needed.
+# Africa's Talking sends SMS messages via their API — reliable for Kenyan numbers.
 #
 # Setup instructions:
-#   1. Go to https://wasenderapi.com and create an account
-#   2. Connect your WhatsApp by scanning the QR code
-#   3. Generate an API key from your Wasender dashboard
-#   4. Set the WASENDER_API_KEY environment variable
+#   1. Go to https://africastalking.com and create an account
+#   2. Get your API key from the dashboard
+#   3. Set the AFRICASTALKING_USERNAME and AFRICASTALKING_API_KEY environment variables
 #
-# The sender name "Curyent" will appear as the contact name for recipients
-# who have saved your number, or as the display name on the Wasender device.
+# The sender ID "Curyent" will appear as the sender name on recipient phones.
 #
 # Debug mode: If API key is not set, messages are logged to the console
 # instead of being sent, so your app still works during development.
 
-WASENDER_API_URL = 'https://api.wasenderapi.com/api/send-message'
-WASENDER_API_KEY = os.environ.get('WASENDER_API_KEY', '6d2cd6b6f85f4defd517d1b6b8cba0f42c5f3cf957bad3a91de74b7b4c16ab7a')
+AFRICASTALKING_USERNAME = os.environ.get('AFRICASTALKING_USERNAME', 'cury')
+AFRICASTALKING_API_KEY = os.environ.get('AFRICASTALKING_API_KEY', 'atsk_3bcc67f1e1091266aa496d3a8be27b1644f2c2305246eadec2989517cbe2d6b1fd9d07a6')
+SMS_SENDER_ID = 'Curyent'
+
+# Initialize Africa's Talking
+if AFRICASTALKING_API_KEY:
+    africastalking.initialize(username=AFRICASTALKING_USERNAME, api_key=AFRICASTALKING_API_KEY)
+    sms = africastalking.SMS
+else:
+    sms = None
 
 
 # =========================
@@ -65,7 +71,7 @@ def normalize_phone_number(phone_number: str) -> str:
 
 def _send_via_api(phone_number, message_body):
     """
-    Send a WhatsApp message using the Wasender API.
+    Send an SMS message using Africa's Talking API.
 
     Args:
         phone_number: Recipient phone in international format (e.g., +254712345678)
@@ -75,58 +81,43 @@ def _send_via_api(phone_number, message_body):
         dict with 'success' (bool) and 'message' (str)
     """
     # If API key is not configured, log the message and return success (debug mode)
-    if not WASENDER_API_KEY:
-        print(f'[WhatsApp DEBUG] Wasender API key not configured — message NOT sent')
-        print(f'[WhatsApp DEBUG] To: {phone_number}')
-        print(f'[WhatsApp DEBUG] Message: {message_body}')
-        return {'success': True, 'message': 'Message logged (Wasender not configured)'}
-
-    payload = {
-        'to': phone_number,
-        'text': message_body
-    }
-
-    headers = {
-        'Authorization': f'Bearer {WASENDER_API_KEY}',
-        'Content-Type': 'application/json'
-    }
+    if not AFRICASTALKING_API_KEY or sms is None:
+        print(f'[SMS DEBUG] Africa\'s Talking API key not configured — message NOT sent')
+        print(f'[SMS DEBUG] To: {phone_number}')
+        print(f'[SMS DEBUG] Message: {message_body}')
+        return {'success': True, 'message': 'Message logged (Africa\'s Talking not configured)'}
 
     try:
-        response = requests.post(
-            WASENDER_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=10
-        )
+        response = sms.send(message_body, [phone_number], sender_id=SMS_SENDER_ID)
+        print(f'[SMS] Response: {response}')
+        
+        # Check if message was sent successfully
+        if response and 'Recipients' in response:
+            for recipient in response['Recipients']:
+                if recipient.get('statusCode') == '000':
+                    print(f'[SMS] Message sent successfully to {phone_number}')
+                    return {'success': True, 'message': 'Message sent via SMS'}
+                else:
+                    error_msg = recipient.get('errorMessage', 'Unknown error')
+                    print(f'[SMS] Error for {phone_number}: {error_msg}')
+                    return {'success': False, 'message': f'SMS error: {error_msg}'}
+        
+        # Fallback: if response format is different, check overall status
+        if response and response.get('status') == 'Success':
+            print(f'[SMS] Message sent successfully to {phone_number}')
+            return {'success': True, 'message': 'Message sent via SMS'}
+        
+        print(f'[SMS] Unexpected response format: {response}')
+        return {'success': False, 'message': f'Unexpected API response'}
 
-        if response.status_code == 200:
-            print(f'[WhatsApp] Message sent successfully to {phone_number}')
-            return {'success': True, 'message': 'Message sent via WhatsApp'}
-        else:
-            # Print full response body for debugging
-            print(f'[WhatsApp] API error ({response.status_code}): {response.text}')
-            try:
-                error_data = response.json()
-                error_detail = error_data.get('message', error_data.get('error', 'Unknown error'))
-            except Exception:
-                error_detail = response.text[:200]
-            print(f'[WhatsApp] Error detail: {error_detail}')
-            return {'success': False, 'message': f'API error: {error_detail}'}
-
-    except requests.exceptions.Timeout:
-        print(f'[WhatsApp] Request timed out for {phone_number}')
-        return {'success': False, 'message': 'Request timed out'}
-    except requests.exceptions.ConnectionError:
-        print(f'[WhatsApp] Connection error for {phone_number}')
-        return {'success': False, 'message': 'Connection error'}
     except Exception as e:
-        print(f'[WhatsApp] Failed to send message: {str(e)}')
+        print(f'[SMS] Failed to send message: {str(e)}')
         return {'success': False, 'message': f'Failed to send: {str(e)}'}
 
 
 def send_message(phone_number, message_body):
     """
-    Send a WhatsApp message using the Wasender API.
+    Send an SMS message using Africa's Talking API.
     Public helper for use by any module (book.py, acc.py, etc.).
 
     Args:
@@ -146,7 +137,7 @@ def send_message(phone_number, message_body):
 
 def send_whatsapp_otp(phone_number, otp_code):
     """
-    Send OTP via WhatsApp using the Wasender API.
+    Send OTP via SMS using Africa's Talking API.
 
     Args:
         phone_number: Recipient phone number (e.g., 0712345678, +254712345678)
@@ -167,11 +158,11 @@ def send_whatsapp_otp(phone_number, otp_code):
         f'Do not share this code with anyone.'
     )
 
-    print(f'[WhatsApp] Sending OTP to {phone_number}...')
+    print(f'[SMS] Sending OTP to {phone_number}...')
     result = _send_via_api(phone_number, message_body)
 
     if result['success']:
-        print(f'[WhatsApp] OTP sent successfully to {phone_number}')
+        print(f'[SMS] OTP sent successfully to {phone_number}')
 
     return result
 
