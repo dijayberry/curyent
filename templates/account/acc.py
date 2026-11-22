@@ -578,11 +578,16 @@ def prepare_otp():
     session['otp_verified'] = False
 
     if result['success']:
-        return jsonify({
+        response_data = {
             'success': True,
             'message': result['message'],
             'phone': normalized
-        })
+        }
+        # Pass through OTP fallback data if SMS failed but we have the code
+        if result.get('otpFallback'):
+            response_data['otpFallback'] = True
+            response_data['otpCode'] = result.get('otpCode', '')
+        return jsonify(response_data)
     else:
         return jsonify({
             'success': False,

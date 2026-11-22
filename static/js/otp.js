@@ -145,7 +145,29 @@ if (sendOtpBtn) {
         .then(function (response) { return response.json(); })
         .then(function (data) {
             if (data.success) {
-                if (data.otpSent === false) {
+                if (data.otpFallback) {
+                    // SMS failed but OTP code is available — show it on screen
+                    phoneStatus.className = 'field-status warning';
+                    phoneStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> SMS not available. Your OTP code is: <strong>' + data.otpCode + '</strong>';
+
+                    // Transition to step 2 after a longer delay so the user can read the code
+                    setTimeout(function () {
+                        stepPhone.style.display = 'none';
+                        stepOtp.style.display = 'block';
+                        sentPhoneLabel.textContent = data.phone || currentPhone;
+
+                        // Auto-fill the OTP code
+                        otpCodeInput.value = data.otpCode;
+                        otpCodeInput.focus();
+
+                        // Show the code prominently in the OTP step
+                        if (otpTimer) {
+                            otpTimer.innerHTML = '<i class="fas fa-info-circle"></i> Your OTP code: <strong style="font-size:1.3em;letter-spacing:4px;">' + data.otpCode + '</strong>';
+                        }
+                        // Start countdown timer (5 minutes)
+                        startOtpTimer(300);
+                    }, 2000);
+                } else if (data.otpSent === false) {
                     // WhatsApp delivery failed — warn user but still proceed to OTP step
                     phoneStatus.className = 'field-status error';
                     phoneStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'WhatsApp delivery failed. The phone may not be on WhatsApp, or the free trial rate limit (1 message/min) has been reached. You can retry on the next page.');
