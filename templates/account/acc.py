@@ -269,8 +269,8 @@ def djs():
     return render_template('account/djs.html')
 
 
-@account_bp.route('/account/event', methods=['GET', 'POST'])
-def event():
+@account_bp.route('/account/venue', methods=['GET', 'POST'])
+def venue():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -291,7 +291,7 @@ def event():
         if db.email_exists(email):
             return jsonify({'success': False, 'message': 'Email already registered'}), 400
         
-        user_id = db.register_user(username, email, password, 'event', phone, location, title='Event Planner')
+        user_id = db.register_user(username, email, password, 'venue', phone, location, title='Venue Owner')
         
         if user_id is None:
             return jsonify({'success': False, 'message': 'Failed to register user'}), 500
@@ -321,9 +321,9 @@ def event():
         session['user_id'] = user_id
         session['username'] = username
         
-        return jsonify({'success': True, 'message': 'Event account created successfully', 'user_id': user_id, 'redirect': '/profile'})
+        return jsonify({'success': True, 'message': 'Venue account created successfully', 'user_id': user_id, 'redirect': '/profile'})
     
-    return render_template('account/event.html')
+    return render_template('account/venue.html')
 
 
 @account_bp.route('/account/photographer', methods=['GET', 'POST'])
@@ -620,8 +620,8 @@ def complete_registration():
     role = 'client'
     if '/djs' in action:
         role = 'dj'
-    elif '/event' in action:
-        role = 'event'
+    elif '/venue' in action:
+        role = 'venue'
     elif '/photographer' in action:
         role = 'photographer'
     elif '/tents' in action:
@@ -643,7 +643,7 @@ def complete_registration():
     # Title mapping
     title_map = {
         'dj': 'DJ',
-        'event': 'Event Planner',
+        'venue': 'Venue Owner',
         'photographer': 'Photographer',
         'tent': 'Tent Rental',
         'caterer': 'Caterer',
@@ -695,7 +695,7 @@ def complete_registration():
             conn.commit()
             conn.close()
 
-        elif role == 'event':
+        elif role == 'venue':
             conn = db.get_db()
             cursor = conn.cursor()
             amenities = [v for k, v in data.items() if k.startswith('amenity_') and v]

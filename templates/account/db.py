@@ -120,7 +120,7 @@ def init_db():
         )
     ''')
 
-    # Create event_venues table for event venue data
+    # Create event_venues table for venue data
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS event_venues (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

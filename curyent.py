@@ -103,7 +103,7 @@ def api_users_by_role():
     # Map role names to their equipment/price tables
     role_price_map = {
         'dj': ('dj_equipment', 'total_per_event'),
-        'event': ('event_venues', 'daily_rate'),
+        'venue': ('event_venues', 'daily_rate'),
         'photographer': ('photographer_profiles', 'daily_rate'),
         'tents': ('tent_inventory', 'daily_rate'),
         'caterer': ('caterer_profiles', 'per_person_rate'),

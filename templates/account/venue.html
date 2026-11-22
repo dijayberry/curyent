@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CURYENT - Event Registration</title>
+    <title>CURYENT - Venue Registration</title>
     <link rel="icon" type="image/png" href="/logo.png"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/djs.css">
@@ -25,12 +25,12 @@
         <!-- Profile Header -->
         <div class="profile-header">
             <img src="/logo.png" alt="CURYENT" class="header-logo">
-            <h1>Event Registration</h1>
-            <p>Register your event venue and services</p>
+            <h1>Venue Registration</h1>
+            <p>Register your venue and services</p>
         </div>
 
         <!-- Registration Form -->
-        <form class="profile-form" action="/account/event" method="POST" enctype="multipart/form-data">
+        <form class="profile-form" action="/account/venue" method="POST" enctype="multipart/form-data">
 
             <!-- ==================== PERSONAL DETAILS SECTION ==================== -->
             <div class="section-block">
@@ -183,12 +183,12 @@
                 </div>
             </div>
 
-            <!-- ==================== EVENT DETAILS SECTION ==================== -->
+            <!-- ==================== VENUE DETAILS SECTION ==================== -->
             <div class="section-block">
                 <h2 class="section-title">
-                    <i class="fas fa-calendar-alt"></i> Event Details
+                    <i class="fas fa-calendar-alt"></i> Venue Details
                 </h2>
-                <p class="section-subtitle">Provide information about your event venue and services.</p>
+                <p class="section-subtitle">Provide information about your venue and services.</p>
 
                 <!-- Venue Name -->
                 <div class="form-group full-width">
@@ -219,17 +219,17 @@
                     <input type="number" id="capacity" name="capacity" placeholder="e.g. 500" min="10" required>
                 </div>
 
-                <!-- Event Photos -->
+                <!-- Venue Photos -->
                 <div class="form-group full-width">
                     <label for="event-photos">
                         <i class="fas fa-images"></i> Venue Photos
                     </label>
                     <div class="image-upload-area">
-                        <input type="file" id="event-photos" name="event_photos" accept="image/*" multiple>
-                        <label for="event-photos" class="image-upload-label">
+                        <input type="file" id="venue-photos" name="venue_photos" accept="image/*" multiple>
+                        <label for="venue-photos" class="image-upload-label">
                             <i class="fas fa-cloud-upload-alt"></i> Upload Photos
                         </label>
-                        <div class="image-preview" id="event-photos-preview"></div>
+                        <div class="image-preview" id="venue-photos-preview"></div>
                     </div>
                 </div>
 
@@ -279,7 +279,7 @@
                     <label for="event-description">
                         <i class="fas fa-align-left"></i> Description
                     </label>
-                    <textarea id="event-description" name="event_description" placeholder="Describe your venue and the types of events you host..." rows="4" required></textarea>
+                    <textarea id="venue-description" name="event_description" placeholder="Describe your venue and the types of events you host..." rows="4" required></textarea>
                 </div>
             </div>
 
