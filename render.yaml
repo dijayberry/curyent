@@ -13,8 +13,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: WASENDER_API_KEY
-        value: 6d2cd6b6f85f4defd517d1b6b8cba0f42c5f3cf957bad3a91de74b7b4c16ab7a
+      - key: AFRICASTALKING_USERNAME
+        value: cury
+      - key: AFRICASTALKING_API_KEY
+        value: atsk_3bcc67f1e1091266aa496d3a8be27b1644f2c2305246eadec2989517cbe2d6b1fd9d07a6
       - key: MPESA_CONSUMER_KEY
         value: xtaExvFW27YoYlReLwIqGAFBf6PfLPBhlmx0PQ1TK9V6Wb7s
       - key: MPESA_CONSUMER_SECRET
