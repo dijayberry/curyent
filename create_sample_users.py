@@ -60,13 +60,15 @@ tent_names = [
     'Diamond Tents'
 ]
 
-# Caterers — realistic business names
+# Caterers — realistic Kenyan catering business names (chef-led, personal kitchens)
 cater_names = [
-    'Delight Catering', 'Flavor Kitchen', 'Taste Bites', 'Gourmet Delights',
-    'Savory Feasts', 'Sweet Banquets', 'Feast Masters', 'Banquet Royale',
-    'Cuisine Kings', 'Delicacy Dishes', 'Epicure Table', 'Palate Catering',
-    'Nosh Kitchen', 'Dine Elegance', 'Savor Foods', 'Relish Catering',
-    'Banquet Pro', 'Foodie Delights', 'Chefs Table', 'TasteBud Catering'
+    'Lilies Kitchen', 'Chef Oliye', 'Mama Olie’s Kitchen', 'Chef Kamau Catering',
+    'Nyama Choma House', 'Mama Njeri’s Table', 'Chef Baraka Foods',
+    'Mama Zawadi Kitchen', 'Chef Amani Catering', 'Mama Wanjiku’s Feast',
+    'Chef Juma’s Kitchen', 'Mama Aisha Catering', 'Chef Hassan Foods',
+    'Mama Akinyi’s Table', 'Chef Peter’s Kitchen', 'Mama Grace Catering',
+    'Chef Brian’s Feast', 'Mama Faith Kitchen', 'Chef David Catering',
+    'Mama Rose’s Kitchen'
 ]
 
 locations = [
@@ -447,7 +449,7 @@ def main():
     print(f"  Photographers: 20 (photo_lens, photo_shutter, photo_capture, ...)")
     print(f"  Venues:        20 (mark_hotel, olives_garden, sunset_resort, ...)")
     print(f"  Tents:         20 (royal_marquee, elegant_canopy, grand_tent_co, ...)")
-    print(f"  Caterers:      20 (delight_catering, flavor_kitchen, taste_bites, ...)")
+    print(f"  Caterers:      20 (lilies_kitchen, chef_oliye, mama_olies_kitchen, ...)")
     print()
     print(f"All users share the password: {PASSWORD}")
     print()
