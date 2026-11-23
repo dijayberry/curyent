@@ -262,6 +262,26 @@ def get_orders_for_me(user_id):
     return book_module.get_received_bookings(user_id)
 
 
+def get_orders_by_me(user_id):
+    """Get all bookings where the user is the booker (client's orders)."""
+    book_conn = book_module.get_book_db()
+    cursor = book_conn.cursor()
+    cursor.execute('''
+        SELECT b.*, 
+               u1.username as booker_username,
+               u2.username as booked_username,
+               u2.role as booked_role
+        FROM bookings b
+        JOIN users u1 ON b.booker_id = u1.id
+        JOIN users u2 ON b.booked_id = u2.id
+        WHERE b.booker_id = ?
+        ORDER BY b.created_at DESC
+    ''', (user_id,))
+    orders = [dict(row) for row in cursor.fetchall()]
+    book_conn.close()
+    return orders
+
+
 def get_feedback_for_me(user_id):
     """Get all feedback for a user."""
     conn = get_probase_db()
@@ -271,6 +291,22 @@ def get_feedback_for_me(user_id):
         FROM feedback f
         JOIN users u ON f.from_user_id = u.id
         WHERE f.user_id = ?
+        ORDER BY f.created_at DESC
+    ''', (user_id,))
+    feedback_list = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return feedback_list
+
+
+def get_feedback_by_me(user_id):
+    """Get all feedback given by a user (client's reviews)."""
+    conn = get_probase_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT f.*, u.username as to_username
+        FROM feedback f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.from_user_id = ?
         ORDER BY f.created_at DESC
     ''', (user_id,))
     feedback_list = [dict(row) for row in cursor.fetchall()]
@@ -387,8 +423,15 @@ def profile_page():
 
     profile = get_user_profile(user_id)
     stats = get_ranking_stats(user_id)
-    orders = get_orders_for_me(user_id)
-    feedback = get_feedback_for_me(user_id)
+    
+    # For clients, show their bookings and given feedback; for providers, show received orders and feedback
+    if profile and profile['role'] == 'client':
+        orders = get_orders_by_me(user_id)
+        feedback = get_feedback_by_me(user_id)
+    else:
+        orders = get_orders_for_me(user_id)
+        feedback = get_feedback_for_me(user_id)
+    
     posts = get_posts_for_user(user_id)
 
     return render_template('profile/profile.html',

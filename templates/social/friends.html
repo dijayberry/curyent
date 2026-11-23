@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Friends</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/social.css">
+</head>
+<body>
+    <header class="social-header">
+        <div class="header-name-container">
+            <a href="/" class="name-logo">
+                <img src="/logo.png" alt="CURYENT Logo">
+                CURYENT
+            </a>
+        </div>
+        <h1 class="page-title"><i class="fas fa-user-group"></i> Friends</h1>
+        <div class="header-profile-link-container">
+            <a href="/profile" class="header-profile-link">
+                <div class="header-profile">
+                    <div class="header-profile-pic">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="header-profile-name">My Profile</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-section">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search by username, location, or title..." autocomplete="off">
+            <button type="button" id="search-clear" style="display:none;"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <button class="tab-btn active" data-tab="friends"><i class="fas fa-user-check"></i> Friends <span class="tab-count" id="friends-count">0</span></button>
+        <button class="tab-btn" data-tab="following"><i class="fas fa-user-plus"></i> Following <span class="tab-count" id="following-count">0</span></button>
+        <button class="tab-btn" data-tab="followers"><i class="fas fa-users"></i> Followers <span class="tab-count" id="followers-count">0</span></button>
+        <button class="tab-btn" data-tab="find"><i class="fas fa-magnifying-glass"></i> Find</button>
+    </div>
+
+    <!-- User List -->
+    <div class="user-list" id="user-list">
+        <div class="loading-spinner" id="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="empty-state" style="display:none;">
+        <i class="fas fa-user-group"></i>
+        <h3>No connections yet</h3>
+        <p>Start finding people to connect with!</p>
+        <button class="btn-find" onclick="switchTab('find')"><i class="fas fa-magnifying-glass"></i> Find People</button>
+    </div>
+
+    <script src="/static/js/social.js"></script>
+</body>
+</html>

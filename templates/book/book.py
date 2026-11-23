@@ -36,6 +36,80 @@ def get_book_db():
     return conn
 
 
+# Map of provider roles to their profile tables and rate columns
+ROLE_RATE_MAP = {
+    'dj': ('dj_equipment', 'total_per_event'),
+    'photographer': ('photographer_profiles', 'daily_rate'),
+    'caterer': ('caterer_profiles', 'daily_rate'),
+    'venue': ('event_venues', 'daily_rate'),
+    'tent': ('tent_inventory', 'daily_rate'),
+}
+
+
+def apply_popularity_bonus(provider_id, booked_role):
+    """
+    When a provider is paid for a booking, check if they've crossed 10 paid events.
+    If so, increase their daily rate by 0.02% (0.0002 multiplier) as a popularity bonus.
+
+    Returns a dict with bonus info or None if no bonus applied.
+    """
+    if booked_role not in ROLE_RATE_MAP:
+        return None
+
+    table_name, rate_column = ROLE_RATE_MAP[booked_role]
+
+    # Count paid bookings for this provider
+    book_conn = get_book_db()
+    book_cur = book_conn.cursor()
+    book_cur.execute(
+        'SELECT COUNT(*) as count FROM bookings WHERE booked_id = ? AND payout_status = ?',
+        (provider_id, 'paid')
+    )
+    paid_count = book_cur.fetchone()['count']
+    book_conn.close()
+
+    # Only apply bonus when crossing the 10 threshold (on the 11th, 12th, 13th... paid booking)
+    if paid_count <= 10:
+        return None
+
+    # Get current rate from curyent.db
+    main_conn = main_db.get_db()
+    main_cur = main_conn.cursor()
+    main_cur.execute(f'SELECT {rate_column} FROM {table_name} WHERE user_id = ?', (provider_id,))
+    row = main_cur.fetchone()
+    if not row:
+        main_conn.close()
+        return None
+
+    current_rate = row[rate_column]
+    if not current_rate or current_rate <= 0:
+        main_conn.close()
+        return None
+
+    # Calculate bonus: 0.02% increase per paid booking above 10
+    # Each booking above 10 adds 0.02% to the original rate
+    bookings_above_10 = paid_count - 10
+    bonus_percentage = bookings_above_10 * 0.02
+    bonus_amount = current_rate * (bonus_percentage / 100.0)
+    new_rate = current_rate + bonus_amount
+
+    # Update the rate in the database
+    main_cur.execute(
+        f'UPDATE {table_name} SET {rate_column} = ? WHERE user_id = ?',
+        (new_rate, provider_id)
+    )
+    main_conn.commit()
+    main_conn.close()
+
+    return {
+        'paid_count': paid_count,
+        'bonus_percentage': bonus_percentage,
+        'bonus_amount': bonus_amount,
+        'old_rate': current_rate,
+        'new_rate': new_rate,
+    }
+
+
 def reset_book_db():
     """Delete and recreate the booking database from scratch, clearing all data.
     If the file is locked, drop all tables instead of deleting the file."""
@@ -220,11 +294,39 @@ def ensure_book_db_initialized():
 def can_book(booker_id, booked_id, booked_role):
     """
     Check if a user can book a person.
-    A user cannot book the same person nor the same role if they already have an active (pending/accepted) booking.
+    Rules:
+    - A user cannot book themselves.
+    - Clients are unbookable — no one can book a client.
+    - A provider (DJ, photographer, caterer, venue, tent) cannot book their own role.
+    - A user cannot book the same person nor the same role if they already have an active booking.
     Returns (allowed, reason)
     """
     if booker_id == booked_id:
         return False, "You cannot book yourself"
+
+    # Get the booker's role from the main database
+    booker_role = 'client'
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT role FROM users WHERE id = ?', (booker_id,))
+        booker_user_row = main_cursor.fetchone()
+        main_conn.close()
+        if booker_user_row:
+            booker_role = booker_user_row['role']
+    except Exception:
+        pass
+
+    # Clients are unbookable — no one can book a client
+    if booked_role == 'client':
+        return False, "You cannot book a client"
+
+    # A provider cannot book their own role (e.g., DJ cannot book DJ)
+    provider_roles = ['dj', 'photographer', 'caterer', 'event', 'tent']
+    role_display_map = {'dj': 'DJ', 'photographer': 'Photographer', 'caterer': 'Caterer', 'event': 'Venue', 'tent': 'Tent'}
+    if booker_role in provider_roles and booked_role == booker_role:
+        role_display = role_display_map.get(booker_role, booker_role.capitalize())
+        return False, f"You cannot book another {role_display}"
 
     conn = get_book_db()
     cursor = conn.cursor()
@@ -253,65 +355,71 @@ def can_book(booker_id, booked_id, booked_role):
     return True, ""
 
 
-def get_bookable_profiles(exclude_user_id=None):
+def get_bookable_profiles(exclude_user_id=None, exclude_role=None):
     """
     Get all bookable profiles from the main database.
     Returns a list of profiles with user info and daily rates.
     If exclude_user_id is provided, that user will not appear in the list.
+    If exclude_role is provided, that role will not appear in the list (used when a provider cannot book their own role).
     """
     profiles = []
     main_conn = main_db.get_db()
     main_cursor = main_conn.cursor()
 
-    # DJs
-    main_cursor.execute('''
-        SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, de.total_per_event as daily_rate, 'dj_equipment' as profile_table
-        FROM users u
-        JOIN dj_equipment de ON u.id = de.user_id
-        WHERE u.role = 'dj' AND u.id != ?
-    ''', (exclude_user_id,))
-    for row in main_cursor.fetchall():
-        profiles.append(dict(row))
+    # DJs — exclude if the booker is a DJ
+    if exclude_role != 'dj':
+        main_cursor.execute('''
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, de.total_per_event as daily_rate, 'dj_equipment' as profile_table
+            FROM users u
+            JOIN dj_equipment de ON u.id = de.user_id
+            WHERE u.role = 'dj' AND u.id != ?
+        ''', (exclude_user_id,))
+        for row in main_cursor.fetchall():
+            profiles.append(dict(row))
 
-    # Event venues
-    main_cursor.execute('''
-        SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, ev.daily_rate, 'event_venues' as profile_table
-        FROM users u
-        JOIN event_venues ev ON u.id = ev.user_id
-        WHERE u.role = 'event' AND u.id != ?
-    ''', (exclude_user_id,))
-    for row in main_cursor.fetchall():
-        profiles.append(dict(row))
+    # Event venues — exclude if the booker is a venue
+    if exclude_role != 'event':
+        main_cursor.execute('''
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, ev.daily_rate, 'event_venues' as profile_table
+            FROM users u
+            JOIN event_venues ev ON u.id = ev.user_id
+            WHERE u.role = 'event' AND u.id != ?
+        ''', (exclude_user_id,))
+        for row in main_cursor.fetchall():
+            profiles.append(dict(row))
 
-    # Photographers
-    main_cursor.execute('''
-        SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, p.daily_rate, 'photographer_profiles' as profile_table
-        FROM users u
-        JOIN photographer_profiles p ON u.id = p.user_id
-        WHERE u.role = 'photographer' AND u.id != ?
-    ''', (exclude_user_id,))
-    for row in main_cursor.fetchall():
-        profiles.append(dict(row))
+    # Photographers — exclude if the booker is a photographer
+    if exclude_role != 'photographer':
+        main_cursor.execute('''
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, p.daily_rate, 'photographer_profiles' as profile_table
+            FROM users u
+            JOIN photographer_profiles p ON u.id = p.user_id
+            WHERE u.role = 'photographer' AND u.id != ?
+        ''', (exclude_user_id,))
+        for row in main_cursor.fetchall():
+            profiles.append(dict(row))
 
-    # Tents
-    main_cursor.execute('''
-        SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, t.daily_rate, 'tent_inventory' as profile_table
-        FROM users u
-        JOIN tent_inventory t ON u.id = t.user_id
-        WHERE u.role = 'tent' AND u.id != ?
-    ''', (exclude_user_id,))
-    for row in main_cursor.fetchall():
-        profiles.append(dict(row))
+    # Tents — exclude if the booker is a tent
+    if exclude_role != 'tent':
+        main_cursor.execute('''
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, t.daily_rate, 'tent_inventory' as profile_table
+            FROM users u
+            JOIN tent_inventory t ON u.id = t.user_id
+            WHERE u.role = 'tent' AND u.id != ?
+        ''', (exclude_user_id,))
+        for row in main_cursor.fetchall():
+            profiles.append(dict(row))
 
-    # Caterers
-    main_cursor.execute('''
-        SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, c.daily_rate, 'caterer_profiles' as profile_table
-        FROM users u
-        JOIN caterer_profiles c ON u.id = c.user_id
-        WHERE u.role = 'caterer' AND u.id != ?
-    ''', (exclude_user_id,))
-    for row in main_cursor.fetchall():
-        profiles.append(dict(row))
+    # Caterers — exclude if the booker is a caterer
+    if exclude_role != 'caterer':
+        main_cursor.execute('''
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, c.daily_rate, 'caterer_profiles' as profile_table
+            FROM users u
+            JOIN caterer_profiles c ON u.id = c.user_id
+            WHERE u.role = 'caterer' AND u.id != ?
+        ''', (exclude_user_id,))
+        for row in main_cursor.fetchall():
+            profiles.append(dict(row))
 
     main_conn.close()
     return profiles
@@ -361,7 +469,22 @@ def booking_page():
         provider_id = request.args.get('provider_id')
         return render_template('book/booking.html', profiles=[], my_bookings=[], received_bookings=[], error="Please log in to view bookings", provider=None, user_id=None)
 
-    profiles = get_bookable_profiles(exclude_user_id=user_id)
+    # Get the user's role to filter out their own role from bookable profiles
+    user_role = 'client'
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT role FROM users WHERE id = ?', (user_id,))
+        user_row = main_cursor.fetchone()
+        main_conn.close()
+        if user_row:
+            user_role = user_row['role']
+    except Exception:
+        pass
+
+    # Providers cannot book their own role, so exclude it from the profiles list
+    exclude_role = user_role if user_role in ['dj', 'photographer', 'caterer', 'event', 'tent'] else None
+    profiles = get_bookable_profiles(exclude_user_id=user_id, exclude_role=exclude_role)
     my_bookings = get_user_bookings(user_id)
     received_bookings = get_received_bookings(user_id)
 
@@ -457,6 +580,22 @@ def create_booking():
     charging_fee = daily_rate * 0.8  # 0.8x is the platform fee
     original_total = daily_rate * 1.8  # total = 1.8 * daily_rate
 
+    # Check if the booker is a service provider (DJ, venue, photographer, tent, caterer)
+    # Providers get 5% off when they book any other role
+    booker_role = 'client'
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT role FROM users WHERE id = ?', (user_id,))
+        booker_user_row = main_cursor.fetchone()
+        main_conn.close()
+        if booker_user_row:
+            booker_role = booker_user_row['role']
+    except Exception:
+        pass
+
+    is_provider = (booker_role != 'client')
+
     # Check loyalty discount: 5% off on every 5th booking (5th, 10th, 15th, ...)
     conn = get_book_db()
     cursor = conn.cursor()
@@ -468,11 +607,24 @@ def create_booking():
     discount_percentage = 0.0
     discount_amount = 0.0
     total_amount = original_total
+    discount_type = ''  # Track which discount type is applied
 
-    if is_fifth_booking:
+    # Apply provider discount (5% off for service providers booking other roles)
+    if is_provider:
         discount_percentage = 5.0
         discount_amount = original_total * (discount_percentage / 100)
         total_amount = original_total - discount_amount
+        discount_type = 'provider'
+
+    # Apply loyalty discount (5% off on every 5th booking) if not already discounted
+    if is_fifth_booking and not is_provider:
+        discount_percentage = 5.0
+        discount_amount = original_total * (discount_percentage / 100)
+        total_amount = original_total - discount_amount
+        discount_type = 'loyalty'
+    elif is_fifth_booking and is_provider:
+        # Both provider and 5th booking — already have 5% from provider, no double discount
+        discount_type = 'provider+loyalty'
 
     cursor.execute('''
         INSERT INTO bookings (booker_id, booked_id, booked_role, daily_rate, charging_fee, total_amount, status,
@@ -521,9 +673,13 @@ def create_booking():
         pass
 
     # Notify the booker that their order was sent successfully
-    booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}. Awaiting provider acceptance before payment.'
-    if is_fifth_booking:
+    booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}. Awaiting {booked_username} acceptance before payment.'
+    if is_provider:
+        booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}! You got a 5% provider discount. Save KES {discount_amount:.0f}!'
+    elif is_fifth_booking:
         booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}! You got a 5% loyalty discount (booking #{current_booking_number}). Save KES {discount_amount:.0f}!'
+    elif discount_type == 'provider+loyalty':
+        booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}! You got a 5% provider discount. Save KES {discount_amount:.0f}!'
 
     try:
         noti_module.create_notification(
@@ -543,27 +699,43 @@ def create_booking():
 
     response_data = {
         'success': True,
-        'message': 'Booking request sent successfully — awaiting provider acceptance',
+        'message': f'Booking request sent to {booked_username} — awaiting acceptance',
         'booking_id': booking_id,
         'total_amount': total_amount,
-        'charging_fee': charging_fee
+        'charging_fee': charging_fee,
+        'is_provider': is_provider,
+        'discount_percentage': discount_percentage,
+        'discount_amount': discount_amount,
+        'original_total': original_total
     }
-    if is_fifth_booking:
+    if is_provider:
+        response_data['message'] = f'Booking sent! You got a 5% provider discount. Save KES {discount_amount:.0f}!'
+    elif is_fifth_booking:
         response_data['message'] = f'Booking sent! You got a 5% loyalty discount (booking #{current_booking_number}). Save KES {discount_amount:.0f}!'
         response_data['is_fifth_booking'] = True
-        response_data['discount_percentage'] = discount_percentage
-        response_data['discount_amount'] = discount_amount
-        response_data['original_total'] = original_total
 
     return jsonify(response_data)
 
 
 @book_bp.route('/api/book/loyalty-check', methods=['GET'])
 def loyalty_check():
-    """Check if the current user's next booking qualifies for the 5th-booking loyalty discount."""
+    """Check if the current user qualifies for any discount on their next booking."""
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({'is_fifth_booking': False, 'booking_number': 0}), 200
+        return jsonify({'is_fifth_booking': False, 'booking_number': 0, 'is_provider': False}), 200
+
+    # Check if the user is a service provider
+    is_provider = False
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT role FROM users WHERE id = ?', (user_id,))
+        user_row = main_cursor.fetchone()
+        main_conn.close()
+        if user_row and user_row['role'] != 'client':
+            is_provider = True
+    except Exception:
+        pass
 
     conn = get_book_db()
     cursor = conn.cursor()
@@ -575,7 +747,8 @@ def loyalty_check():
     is_fifth = (current_booking_number % 5 == 0)
     return jsonify({
         'is_fifth_booking': is_fifth,
-        'booking_number': current_booking_number
+        'booking_number': current_booking_number,
+        'is_provider': is_provider
     }), 200
 
 
@@ -608,7 +781,7 @@ def create_multi_booking():
     providers = data.get('providers', [])
     
     if not providers or len(providers) < 2:
-        return jsonify({'success': False, 'message': 'Select at least 2 providers for a multi-booking discount'}), 400
+        return jsonify({'success': False, 'message': 'Select at least 2 people for a multi-booking discount'}), 400
 
     # Event details
     event_start_date = data.get('event_start_date')
@@ -753,7 +926,7 @@ def create_multi_booking():
         if is_five_booking and idx == 4:
             noti_message = f'{booker_username} has requested to book you ({p["booked_role"].capitalize()}) for {celebration_title} as part of a full 5-role booking! You get a 10% + 5% bonus discount!'
         else:
-            noti_message = f'{booker_username} has requested to book you ({p["booked_role"].capitalize()}) for {celebration_title} as part of a multi-provider booking. You get a 10% discount bundle!'
+            noti_message = f'{booker_username} has requested to book you ({p["booked_role"].capitalize()}) for {celebration_title} as part of a multi-booking. You get a 10% discount bundle!'
 
         try:
             noti_module.create_notification(
@@ -774,9 +947,9 @@ def create_multi_booking():
 
     # Notify the booker
     if is_five_booking:
-        noti_msg = f'Your booking request for {celebration_title} has been sent to all 5 providers with a 10% discount + 5% bonus on the 5th! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
+        noti_msg = f'Your booking request for {celebration_title} has been sent to all 5 people with a 10% discount + 5% bonus on the 5th! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
     else:
-        noti_msg = f'Your booking request for {celebration_title} has been sent to {len(providers)} providers with a 10% discount! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
+        noti_msg = f'Your booking request for {celebration_title} has been sent to {len(providers)} people with a 10% discount! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
 
     try:
         noti_module.create_notification(
@@ -801,11 +974,11 @@ def create_multi_booking():
         'discount_percentage': base_discount_percentage
     }
     if is_five_booking:
-        response_data['message'] = f'Multi-booking request sent to all 5 providers with 10% + 5% bonus discount!'
+        response_data['message'] = f'Multi-booking request sent to all 5 people with 10% + 5% bonus discount!'
         response_data['fifth_booking_discount'] = fifth_booking_discount
         response_data['is_five_booking'] = True
     else:
-        response_data['message'] = f'Multi-booking request sent to {len(providers)} providers with 10% discount!'
+        response_data['message'] = f'Multi-booking request sent to {len(providers)} people with 10% discount!'
 
     return jsonify(response_data)
 
@@ -1375,10 +1548,11 @@ def process_payout(booking_id):
     payout_amount = booking['daily_rate']  # 1.0x goes to the booked person
     mpesa_payout_result = {'success': True, 'message': 'Payout not initiated', 'simulated': True}
     if provider_phone:
+        celebration_title = booking['celebration_title'] if booking['celebration_title'] else 'booking'
         mpesa_payout_result = mpesa_module.initiate_b2c_payout(
             recipient_phone=provider_phone,
             amount=payout_amount,
-            occasion=f'Service payout for {booking.get("celebration_title", "booking")}'
+            occasion=f'Service payout for {celebration_title}'
         )
 
     # Update booking payout status
@@ -1388,20 +1562,35 @@ def process_payout(booking_id):
     ''', ('paid', now, booking_id))
     conn.commit()
 
-    # Send payout notification
-    booking['payout_status'] = 'paid'
-    booking['payout_at'] = now
-    notification_result = send_payout_notification(booking)
+    # Check and apply popularity bonus (0.02% rate increase per booking above 10)
+    bonus_info = apply_popularity_bonus(booking['booked_id'], booking['booked_role'])
+
+    # Convert Row to dict for notification (sqlite3.Row doesn't support item assignment)
+    booking_dict = dict(booking)
+    booking_dict['payout_status'] = 'paid'
+    booking_dict['payout_at'] = now
+    notification_result = send_payout_notification(booking_dict)
 
     conn.close()
 
-    return jsonify({
+    response = {
         'success': True,
         'message': 'Payout processed successfully',
         'payout_amount': payout_amount,
         'notification': notification_result.get('message', ''),
         'mpesa_payout': mpesa_payout_result
-    })
+    }
+
+    if bonus_info:
+        response['bonus_applied'] = True
+        response['bonus_message'] = (
+            f'Popularity bonus! Your rate increased by {bonus_info["bonus_percentage"]:.2f}% '
+            f'(KES {bonus_info["old_rate"]:.0f} → KES {bonus_info["new_rate"]:.0f}) '
+            f'after {bonus_info["paid_count"]} paid bookings.'
+        )
+        response['bonus_info'] = bonus_info
+
+    return jsonify(response)
 
 
 @book_bp.route('/api/booking/<int:booking_id>/status', methods=['GET'])

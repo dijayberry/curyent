@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CURYENT - Review {{ reviewed_user.username }}</title>
+    <link rel="icon" type="image/png" href="/logo.png"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/social.css">
+</head>
+<body>
+    <header class="social-header">
+        <div class="header-name-container">
+            <a href="/" class="name-logo">
+                <img src="/logo.png" alt="CURYENT Logo">
+                CURYENT
+            </a>
+        </div>
+        <h1 class="page-title"><i class="fas fa-user"></i> User Profile</h1>
+        <div class="header-profile-link-container">
+            <a href="/profile" class="header-profile-link">
+                <div class="header-profile">
+                    <div class="header-profile-pic">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span class="header-profile-name">My Profile</span>
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <!-- Profile Section -->
+    <div class="review-profile-section">
+        <div class="review-profile-card">
+            <div class="review-avatar-container">
+                <div class="review-avatar clickable-profile-pic" data-user-id="{{ reviewed_user.id }}">
+                    {% if reviewed_user.profile_image %}
+                    <img src="{{ reviewed_user.profile_image }}" alt="{{ reviewed_user.username }}">
+                    {% else %}
+                    <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="review-info">
+                <h2 class="review-username">{{ reviewed_user.username }}</h2>
+                {% if reviewed_user.title %}
+                <p class="review-title">{{ reviewed_user.title }}</p>
+                {% endif %}
+                <div class="review-meta">
+                    <span class="review-role"><i class="fas fa-tag"></i> {{ reviewed_user.role }}</span>
+                    {% if reviewed_user.location %}
+                    <span class="review-location"><i class="fas fa-map-marker-alt"></i> {{ reviewed_user.location }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="review-action">
+                {% if current_user_id != reviewed_user.id %}
+                <button class="btn-review-action" id="review-action-btn" data-target-id="{{ reviewed_user.id }}">
+                    {% if relationship == 'friends' %}
+                    <i class="fas fa-user-minus"></i> Unfriend
+                    {% elif relationship == 'following' %}
+                    <i class="fas fa-user-minus"></i> Unfollow
+                    {% else %}
+                    <i class="fas fa-user-plus"></i> Follow
+                    {% endif %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="review-tabs-container">
+        <button class="review-tab-btn active" data-tab="posts"><i class="fas fa-images"></i> Posts</button>
+        <button class="review-tab-btn" data-tab="ranking"><i class="fas fa-chart-bar"></i> Ranking</button>
+    </div>
+
+    <!-- Posts Tab Content -->
+    <div class="review-tab-content" id="posts-content">
+        {% if posts %}
+        <div class="posts-grid">
+            {% for post in posts %}
+            <div class="post-card">
+                <div class="post-image clickable-profile-pic" data-user-id="{{ reviewed_user.id }}">
+                    <img src="{{ post.image_path }}" alt="Post">
+                </div>
+                {% if post.caption %}
+                <p class="post-caption">{{ post.caption }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-images"></i>
+            <h3>No posts yet</h3>
+            <p>This user hasn't shared any posts.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ranking Tab Content -->
+    <div class="review-tab-content" id="ranking-content" style="display:none;">
+        <div class="ranking-stats-grid">
+            <div class="ranking-stat-card">
+                <i class="fas fa-check-circle"></i>
+                <div class="stat-value">{{ stats.completed_orders }}</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="ranking-stat-card">
+                <i class="fas fa-clock"></i>
+                <div class="stat-value">{{ stats.pending_orders }}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="ranking-stat-card">
+                <i class="fas fa-star"></i>
+                <div class="stat-value">{{ stats.avg_rating }}</div>
+                <div class="stat-label">Rating</div>
+            </div>
+            <div class="ranking-stat-card">
+                <i class="fas fa-comment"></i>
+                <div class="stat-value">{{ stats.total_feedback }}</div>
+                <div class="stat-label">Reviews</div>
+            </div>
+        </div>
+
+        {% if feedback %}
+        <div class="feedback-section">
+            <h3 class="feedback-title"><i class="fas fa-comments"></i> Reviews</h3>
+            <div class="feedback-list">
+                {% for fb in feedback %}
+                <div class="feedback-card">
+                    <div class="feedback-header">
+                        <span class="feedback-username">{{ fb.from_username }}</span>
+                        <div class="feedback-rating">
+                            {% for i in range(1, 6) %}
+                            <i class="fas fa-star {% if i <= fb.rating %}star-filled{% else %}star-empty{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if fb.comment %}
+                    <p class="feedback-comment">{{ fb.comment }}</p>
+                    {% endif %}
+                    <span class="feedback-date">{{ fb.created_at }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Image Popup Modal -->
+    <div class="image-popup" id="image-popup">
+        <div class="image-popup-overlay"></div>
+        <div class="image-popup-content">
+            <button class="image-popup-close" id="image-popup-close"><i class="fas fa-times"></i></button>
+            <img src="" alt="Profile Picture" id="popup-image">
+        </div>
+    </div>
+
+    <script src="/static/js/social.js"></script>
+    <script>
+        // Pass reviewed user data to JS
+        window.reviewedUserId = {{ reviewed_user.id }};
+        window.reviewedUserProfileImage = "{{ reviewed_user.profile_image or '' }}";
+        window.currentRelationship = "{{ relationship or '' }}";
+    </script>
+</body>
+</html>

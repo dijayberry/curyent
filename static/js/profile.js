@@ -660,7 +660,50 @@ function deletePost(postId) {
 // Initialize posts on DOM ready
 document.addEventListener('DOMContentLoaded', function () {
     initPosts();
+    initClickableProfilePic();
 });
+
+/* =========================
+   CLICKABLE PROFILE PICTURE
+   Shows full-screen popup on profile page
+========================= */
+
+function initClickableProfilePic() {
+    var clickablePics = document.querySelectorAll('.clickable-profile-pic');
+    var modal = document.getElementById('image-modal');
+    var modalImage = document.getElementById('image-modal-image');
+    var modalClose = document.getElementById('image-modal-close');
+
+    clickablePics.forEach(function(el) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var profileImage = this.getAttribute('data-profile-image') || '';
+            if (profileImage && modal && modalImage) {
+                modalImage.src = profileImage;
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+    });
+
+    // Close modal
+    if (modalClose) {
+        modalClose.addEventListener('click', function() {
+            closeModal();
+        });
+    }
+
+    // Close on overlay click
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+}
 
 
 /* =========================

@@ -274,17 +274,29 @@ function openBookingModal(bookedId, bookedRole, dailyRate, username) {
     var originalTotal = dailyRate * 1.8;
     document.getElementById('modal-total-display').textContent = 'KES ' + Math.round(originalTotal);
 
-    // Hide loyalty discount rows by default
+    // Hide all discount rows by default
+    document.getElementById('modal-provider-discount').style.display = 'none';
     document.getElementById('modal-fifth-loyalty').style.display = 'none';
     document.getElementById('modal-final-row').style.display = 'none';
 
-    // Check if this booking qualifies for the 5th-booking loyalty discount
+    // Check if this booking qualifies for any discount
     fetch('/api/book/loyalty-check')
         .then(function (response) { return response.json(); })
         .then(function (data) {
-            if (data.is_fifth_booking) {
-                var discountAmount = originalTotal * 0.05;
-                var finalTotal = originalTotal - discountAmount;
+            var discountAmount = 0;
+            var finalTotal = originalTotal;
+            if (data.is_provider) {
+                // Provider gets 5% off when booking any other role
+                discountAmount = originalTotal * 0.05;
+                finalTotal = originalTotal - discountAmount;
+                document.getElementById('modal-provider-discount-amount').textContent = '-KES ' + Math.round(discountAmount);
+                document.getElementById('modal-final-display').textContent = 'KES ' + Math.round(finalTotal);
+                document.getElementById('modal-provider-discount').style.display = 'flex';
+                document.getElementById('modal-final-row').style.display = 'flex';
+            } else if (data.is_fifth_booking) {
+                // 5th booking loyalty discount
+                discountAmount = originalTotal * 0.05;
+                finalTotal = originalTotal - discountAmount;
                 document.getElementById('modal-fifth-discount-amount').textContent = '-KES ' + Math.round(discountAmount);
                 document.getElementById('modal-final-display').textContent = 'KES ' + Math.round(finalTotal);
                 document.getElementById('modal-fifth-loyalty').style.display = 'flex';

@@ -7,6 +7,7 @@ from templates.profile import profile_bp
 from templates.chat import chat_bp
 from templates.notifications import notifications_bp
 from templates.admin import admin_bp
+from templates.social import social_bp
 
 app = Flask(__name__)
 app.secret_key = 'curyent-secret-key'
@@ -16,6 +17,35 @@ app.register_blueprint(profile_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(notifications_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(social_bp)
+
+
+@app.after_request
+def inject_page_loader(response):
+    """Inject the CURYENT page loader CSS and JS into all HTML responses."""
+    if response.content_type and 'text/html' in response.content_type:
+        try:
+            # Only inject for non-admin pages (admin has its own styling)
+            path = request.path
+            if not path.startswith('/admin') and not path.startswith('/friends') and not path.startswith('/review') and not path.startswith('/api/friends'):
+                loader_css = '<link rel="stylesheet" href="/static/css/loader.css">'
+                loader_js = r'<script src="/static/js/loader.js"></script>'
+                
+                html = response.get_data(as_text=True)
+                
+                # Inject CSS right before </head>
+                if '</head>' in html:
+                    html = html.replace('</head>', loader_css + '\n</head>')
+                
+                # Inject JS right after <body>
+                if '<body>' in html:
+                    html = html.replace('<body>', '<body>' + loader_js)
+                
+                response.set_data(html.encode('utf-8'))
+        except Exception:
+            # If injection fails, continue without the loader
+            pass
+    return response
 
 @app.route('/')
 def home():
@@ -49,16 +79,6 @@ def home():
 
     return render_template('home/home.html', logged_in=user_id is not None, username=username, location=location, profile_image=profile_image, title=title, ui=ui_config)
 
-@app.route('/reset-databases')
-def reset_databases():
-    """Reset all databases to a clean state via browser."""
-    success, failed = reset_all_databases()
-    message = f"Reset complete. Success: {', '.join(success) if success else 'none'}. "
-    if failed:
-        message += f"Failed (locked): {', '.join(failed)}. Restart the app to clear these."
-    else:
-        message += "All databases and uploaded files have been reset successfully."
-    return message
 
 
 @app.route('/logo.png')
@@ -353,6 +373,9 @@ def init_all_databases():
 
     import templates.admin.admin_db as admin_db
     admin_db.init_db()
+
+    import templates.social.social as social_module
+    social_module.init_social_db()
 
 
 # Initialize databases at module level so Gunicorn can import and start the app

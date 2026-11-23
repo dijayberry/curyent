@@ -26,10 +26,17 @@
 
     <!-- Main Content -->
     <div class="profile-container">
+        
+        <!-- Cover Photo -->
+        <div class="profile-cover">
+            <div class="profile-cover-overlay"></div>
+        </div>
+
+        <!-- Profile Header -->
         <div class="profile-header">
-            <div class="profile-header-left">
+            <div class="profile-header-main">
                 <div class="profile-avatar-wrapper">
-                    <div class="profile-avatar">
+                    <div class="profile-avatar clickable-profile-pic" data-user-id="{{ profile.id if profile else '' }}" data-profile-image="{{ profile.profile_image if profile and profile.get('profile_image') else '' }}">
                         {% if profile and profile.get('profile_image') %}
                         <img src="{{ profile.profile_image }}" alt="Profile Picture" class="profile-avatar-img">
                         {% else %}
@@ -39,14 +46,16 @@
                     <span class="profile-status-indicator"></span>
                 </div>
                 <div class="profile-header-info">
-                    <div class="profile-title-row">
-                        {% if profile and profile.title %}
-                        <span class="profile-title">{{ profile.title }}</span>
-                        {% endif %}
+                    <div class="profile-name-row">
                         <h1 class="profile-username">{{ profile.username if profile else 'User' }}</h1>
+                        {% if profile and profile.title %}
+                        <span class="profile-title-badge">{{ profile.title }}</span>
+                        {% endif %}
                     </div>
                     <div class="profile-header-meta">
-                        <span class="profile-role-badge">{{ profile.role | upper if profile else 'ROLE' }}</span>
+                        <span class="profile-role-badge">
+                            <i class="fas fa-briefcase"></i> {{ profile.role | upper if profile else 'ROLE' }}
+                        </span>
                         <span class="profile-location">
                             <i class="fas fa-map-marker-alt"></i> {{ profile.location if profile and profile.location else 'Location not set' }}
                         </span>
@@ -54,31 +63,75 @@
                 </div>
             </div>
             <div class="profile-header-actions">
-                <button class="btn-header-action" id="btn-edit-profile" title="Edit Profile" aria-label="Edit your profile">
-                    <i class="fas fa-edit" aria-hidden="true"></i>
+                <button class="btn-header-action btn-edit-profile-header" id="btn-edit-profile" title="Edit Profile" aria-label="Edit your profile">
+                    <i class="fas fa-edit" aria-hidden="true"></i> <span>Edit</span>
                 </button>
-                <a href="/chat" class="btn-header-action" title="Chat" aria-label="Open chat with other users">
-                    <i class="fas fa-comments" aria-hidden="true"></i>
+                <a href="/chat" class="btn-header-action btn-chat-header" title="Chat" aria-label="Open chat with other users">
+                    <i class="fas fa-comments" aria-hidden="true"></i> <span>Chat</span>
                 </a>
             </div>
+        </div>
+
+        <!-- Quick Stats Bar -->
+        <div class="profile-quick-stats">
+            {% if profile and profile.role == 'client' %}
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.total_orders_made if stats else 0 }}</span>
+                <span class="quick-stat-label">Bookings Made</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.orders_made.get('pending', 0) if stats else 0 }}</span>
+                <span class="quick-stat-label">Pending</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.orders_made.get('accepted', 0) if stats else 0 }}</span>
+                <span class="quick-stat-label">Accepted</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.orders_made.get('declined', 0) if stats else 0 }}</span>
+                <span class="quick-stat-label">Declined</span>
+            </div>
+            {% else %}
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.completed_orders if stats else 0 }}</span>
+                <span class="quick-stat-label">Completed</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.pending_orders if stats else 0 }}</span>
+                <span class="quick-stat-label">Pending</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.avg_rating if stats else 0 }} <small>/5</small></span>
+                <span class="quick-stat-label">Rating</span>
+            </div>
+            <div class="quick-stat-item">
+                <span class="quick-stat-value">{{ stats.total_feedback if stats else 0 }}</span>
+                <span class="quick-stat-label">Reviews</span>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Tabs Navigation -->
         <div class="profile-tabs-nav" role="tablist" aria-label="Profile sections">
             <button class="profile-tab-btn active" data-tab="personal" role="tab" aria-selected="true" aria-controls="tab-personal">
-                <i class="fas fa-id-card" aria-hidden="true"></i> Personal Details
+                <i class="fas fa-id-card" aria-hidden="true"></i>
+                <span>Personal</span>
             </button>
             <button class="profile-tab-btn" data-tab="ranking" role="tab" aria-selected="false" aria-controls="tab-ranking">
-                <i class="fas fa-chart-bar" aria-hidden="true"></i> Ranking
+                <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                <span>Ranking</span>
             </button>
             <button class="profile-tab-btn" data-tab="orders" role="tab" aria-selected="false" aria-controls="tab-orders">
-                <i class="fas fa-shopping-cart" aria-hidden="true"></i> Orders for Me
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                <span>Orders</span>
             </button>
             <button class="profile-tab-btn" data-tab="posts" role="tab" aria-selected="false" aria-controls="tab-posts">
-                <i class="fas fa-camera" aria-hidden="true"></i> Posts
+                <i class="fas fa-camera" aria-hidden="true"></i>
+                <span>Posts</span>
             </button>
             <button class="profile-tab-btn" data-tab="feedback" role="tab" aria-selected="false" aria-controls="tab-feedback">
-                <i class="fas fa-star" aria-hidden="true"></i> Feedback
+                <i class="fas fa-star" aria-hidden="true"></i>
+                <span>Feedback</span>
             </button>
         </div>
 
@@ -89,73 +142,84 @@
             <!-- Personal Details Section  -->
             <!-- ========================= -->
             <div class="profile-tab-pane active" id="tab-personal" role="tabpanel" aria-labelledby="tab-personal">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2><i class="fas fa-id-card"></i> Personal Details</h2>
-                        <button class="btn-edit-profile" id="btn-edit" aria-label="Edit personal details">
-                            <i class="fas fa-edit" aria-hidden="true"></i> Edit
-                        </button>
+                <div class="personal-details-grid">
+                    
+                    <!-- Profile Photo Card -->
+                    <div class="section-card photo-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-camera"></i> Profile Photo</h2>
+                        </div>
+                        <div class="profile-image-section">
+                            <div class="profile-image-preview" id="profile-image-preview">
+                                <img src="{{ profile.profile_image if profile and profile.get('profile_image') else '' }}" alt="Profile Picture" id="profile-image-img">
+                                <div class="profile-image-overlay" id="profile-image-overlay">
+                                    <i class="fas fa-camera"></i>
+                                    <span>Change Photo</span>
+                                </div>
+                            </div>
+                            <input type="file" id="profile-image-input" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" hidden>
+                            <button class="btn-upload-image" id="btn-upload-image">
+                                <i class="fas fa-camera"></i> Upload Photo
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Profile Picture Upload -->
-                    <div class="profile-image-section">
-                        <div class="profile-image-preview" id="profile-image-preview">
-                            <img src="{{ profile.profile_image if profile and profile.get('profile_image') else '' }}" alt="Profile Picture" id="profile-image-img">
-                            <div class="profile-image-overlay" id="profile-image-overlay">
-                                <i class="fas fa-camera"></i>
-                                <span>Change Photo</span>
-                            </div>
+                    <!-- Personal Info Card -->
+                    <div class="section-card info-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-id-card"></i> Personal Information</h2>
+                            <button class="btn-edit-profile" id="btn-edit" aria-label="Edit personal details">
+                                <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                            </button>
                         </div>
-                        <input type="file" id="profile-image-input" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" hidden>
-                        <button class="btn-upload-image" id="btn-upload-image">
-                            <i class="fas fa-camera"></i> Upload Profile Photo
-                        </button>
-                    </div>
 
-                    <div class="profile-form" id="profile-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="username"><i class="fas fa-user"></i> Username</label>
-                                <input type="text" id="username" class="form-input" value="{{ profile.username if profile else '' }}" readonly>
+                        <div class="profile-form" id="profile-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                                    <input type="text" id="username" class="form-input" value="{{ profile.username if profile else '' }}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                                    <input type="email" id="email" class="form-input" value="{{ profile.email if profile else '' }}" readonly>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                                <input type="email" id="email" class="form-input" value="{{ profile.email if profile else '' }}" readonly>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="phone"><i class="fas fa-phone"></i> Phone</label>
+                                    <input type="tel" id="phone" class="form-input" value="{{ profile.phone if profile else '' }}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location"><i class="fas fa-map-marker-alt"></i> Location</label>
+                                    <input type="text" id="location" class="form-input" value="{{ profile.location if profile else '' }}" readonly>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="phone"><i class="fas fa-phone"></i> Phone</label>
-                                <input type="tel" id="phone" class="form-input" value="{{ profile.phone if profile else '' }}" readonly>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="role"><i class="fas fa-briefcase"></i> Role</label>
+                                    <input type="text" id="role" class="form-input" value="{{ profile.role | upper if profile else '' }}" readonly disabled>
+                                </div>
+                                {% if profile and profile.role != 'client' %}
+                                <div class="form-group">
+                                    <label for="daily_rate"><i class="fas fa-money-bill-wave"></i> {% if profile.role == 'dj' %}Total per event{% else %}Daily Rate{% endif %}</label>
+                                    <input type="number" id="daily_rate" class="form-input" value="{{ profile.role_data.daily_rate if profile and profile.get('role_data') else '' }}" readonly>
+                                </div>
+                                {% endif %}
                             </div>
-                            <div class="form-group">
-                                <label for="location"><i class="fas fa-map-marker-alt"></i> Location</label>
-                                <input type="text" id="location" class="form-input" value="{{ profile.location if profile else '' }}" readonly>
+                            <div class="form-row single-row">
+                                <div class="form-group">
+                                    <label for="created_at"><i class="fas fa-calendar"></i> Member Since</label>
+                                    <input type="text" id="created_at" class="form-input" value="{{ profile.created_at if profile else '' }}" readonly disabled>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="role"><i class="fas fa-briefcase"></i> Role</label>
-                                <input type="text" id="role" class="form-input" value="{{ profile.role | upper if profile else '' }}" readonly disabled>
+                            <div class="form-actions" id="form-actions" style="display: none;">
+                                <button class="btn-save" id="btn-save" aria-label="Save profile changes">
+                                    <i class="fas fa-save" aria-hidden="true"></i> Save Changes
+                                </button>
+                                <button class="btn-cancel" id="btn-cancel" aria-label="Cancel editing">
+                                    <i class="fas fa-times" aria-hidden="true"></i> Cancel
+                                </button>
                             </div>
-                            <div class="form-group">
-                                <label for="daily_rate"><i class="fas fa-money-bill-wave"></i> {% if profile and profile.role == 'dj' %}Total per event{% else %}Daily Rate{% endif %}</label>
-                                <input type="number" id="daily_rate" class="form-input" value="{{ profile.role_data.daily_rate if profile and profile.get('role_data') else '' }}" readonly>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="created_at"><i class="fas fa-calendar"></i> Member Since</label>
-                                <input type="text" id="created_at" class="form-input" value="{{ profile.created_at if profile else '' }}" readonly disabled>
-                            </div>
-                        </div>
-                        <div class="form-actions" id="form-actions" style="display: none;">
-                            <button class="btn-save" id="btn-save" aria-label="Save profile changes">
-                                <i class="fas fa-save" aria-hidden="true"></i> Save Changes
-                            </button>
-                            <button class="btn-cancel" id="btn-cancel" aria-label="Cancel editing">
-                                <i class="fas fa-times" aria-hidden="true"></i> Cancel
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -165,7 +229,47 @@
             <!-- Ranking Section           -->
             <!-- ========================= -->
             <div class="profile-tab-pane" id="tab-ranking" role="tabpanel" aria-labelledby="tab-ranking">
+                
+                <!-- Stats Cards -->
                 <div class="stats-grid">
+                    {% if profile and profile.role == 'client' %}
+                    <div class="stat-card">
+                        <div class="stat-icon pending-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.orders_made.get('pending', 0) if stats else 0 }}</h3>
+                            <p class="stat-label">Pending Bookings</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon completed-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.orders_made.get('accepted', 0) if stats else 0 }}</h3>
+                            <p class="stat-label">Accepted Bookings</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon declined-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.orders_made.get('declined', 0) if stats else 0 }}</h3>
+                            <p class="stat-label">Declined Bookings</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon earnings-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-value">{{ stats.total_orders_made if stats else 0 }}</h3>
+                            <p class="stat-label">Total Bookings</p>
+                        </div>
+                    </div>
+                    {% else %}
                     <div class="stat-card">
                         <div class="stat-icon pending-icon">
                             <i class="fas fa-clock"></i>
@@ -202,75 +306,168 @@
                             <p class="stat-label">Total Earnings</p>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
 
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2><i class="fas fa-chart-bar"></i> Order Statistics</h2>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="ordersChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2><i class="fas fa-star"></i> Rating Overview</h2>
-                    </div>
-                    <div class="rating-overview">
-                        <div class="rating-big">
-                            <span class="rating-number">{{ stats.avg_rating if stats else 0 }}</span>
-                            <div class="rating-stars">
-                                {% for i in range(1, 6) %}
-                                    <i class="fas fa-star {% if i <= (stats.avg_rating if stats else 0) | int %}star-filled{% else %}star-empty{% endif %}"></i>
-                                {% endfor %}
-                            </div>
-                            <p class="rating-count">{{ stats.total_feedback if stats else 0 }} reviews</p>
+                <!-- Charts and Rating Row -->
+                <div class="ranking-row">
+                    <!-- Order Statistics Chart -->
+                    <div class="section-card chart-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-chart-bar"></i> {% if profile and profile.role == 'client' %}Booking Statistics{% else %}Order Statistics{% endif %}</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="ordersChart"></canvas>
                         </div>
                     </div>
+
+                    {% if not (profile and profile.role == 'client') %}
+                    <!-- Rating Overview -->
+                    <div class="section-card rating-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-star"></i> Rating Overview</h2>
+                        </div>
+                        <div class="rating-overview">
+                            <div class="rating-big">
+                                <span class="rating-number">{{ stats.avg_rating if stats else 0 }}</span>
+                                <div class="rating-stars">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fas fa-star {% if i <= (stats.avg_rating if stats else 0) | int %}star-filled{% else %}star-empty{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                                <p class="rating-count">{{ stats.total_feedback if stats else 0 }} reviews</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- ========================= -->
-            <!-- Orders for Me Section     -->
+            <!-- Orders Section            -->
             <!-- ========================= -->
             <div class="profile-tab-pane" id="tab-orders" role="tabpanel" aria-labelledby="tab-orders">
                 <div class="section-card">
+                    {% if profile and profile.role == 'client' %}
                     <div class="section-header">
-                        <h2><i class="fas fa-shopping-cart"></i> Orders Made for Me</h2>
+                        <h2><i class="fas fa-calendar-check"></i> My Bookings</h2>
+                        {% if orders %}
+                        <span class="order-count-badge">{{ orders|length }} booking{{ 's' if orders|length != 1 else '' }}</span>
+                        {% endif %}
                     </div>
                     {% if orders %}
                         <div class="orders-list">
                             {% for order in orders %}
                             <div class="order-card">
                                 <div class="order-header">
-                                    <span class="order-booker">
-                                        <i class="fas fa-user"></i> {{ order.booker_username }}
-                                    </span>
+                                    <div class="order-booker-info">
+                                        <div class="order-booker-avatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="order-booker-text">
+                                            <span class="order-booker-name">{{ order.booked_username }} ({{ order.booked_role | upper }})</span>
+                                            <span class="order-date">{{ order.created_at }}</span>
+                                        </div>
+                                    </div>
                                     <span class="order-status status-{{ order.status }}">
-                                        {{ order.status | capitalize }}
+                                        <i class="fas fa-circle status-dot"></i> {{ order.status | capitalize }}
                                     </span>
                                 </div>
-                                <div class="order-details">
-                                    <div class="order-detail-row">
-                                        <span class="order-label">Role:</span>
-                                        <span class="order-value">{{ order.booked_role | upper }}</span>
+                                <div class="order-details-grid">
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-briefcase"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Service</span>
+                                            <span class="order-value">{{ order.booked_role | upper }}</span>
+                                        </div>
                                     </div>
-                                    <div class="order-detail-row">
-                                        <span class="order-label">{% if order.booked_role == 'dj' %}Total per event{% else %}Daily Rate{% endif %}:</span>
-                                        <span class="order-value">${{ '%.2f' | format(order.daily_rate) }}</span>
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Rate</span>
+                                            <span class="order-value">${{ '%.2f' | format(order.daily_rate) }}</span>
+                                        </div>
                                     </div>
-                                    <div class="order-detail-row">
-                                        <span class="order-label">Total Amount:</span>
-                                        <span class="order-value">${{ '%.2f' | format(order.total_amount) }}</span>
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-receipt"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Total</span>
+                                            <span class="order-value">${{ '%.2f' | format(order.total_amount) }}</span>
+                                        </div>
                                     </div>
-                                    <div class="order-detail-row">
-                                        <span class="order-label">Your Earnings:</span>
-                                        <span class="order-value earnings-highlight">${{ '%.2f' | format(order.daily_rate * 2) }}</span>
+                                    {% if order.discount_percentage and order.discount_percentage > 0 %}
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-tag"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Discount</span>
+                                            <span class="order-value">{{ order.discount_percentage }}% off</span>
+                                        </div>
                                     </div>
-                                    <div class="order-detail-row">
-                                        <span class="order-label">Date:</span>
-                                        <span class="order-value">{{ order.created_at }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h3>No Bookings Yet</h3>
+                            <p>When you book someone, your bookings will appear here.</p>
+                        </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="section-header">
+                        <h2><i class="fas fa-shopping-cart"></i> Orders Made for Me</h2>
+                        {% if orders %}
+                        <span class="order-count-badge">{{ orders|length }} order{{ 's' if orders|length != 1 else '' }}</span>
+                        {% endif %}
+                    </div>
+                    {% if orders %}
+                        <div class="orders-list">
+                            {% for order in orders %}
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div class="order-booker-info">
+                                        <div class="order-booker-avatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="order-booker-text">
+                                            <span class="order-booker-name">{{ order.booker_username }}</span>
+                                            <span class="order-date">{{ order.created_at }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="order-status status-{{ order.status }}">
+                                        <i class="fas fa-circle status-dot"></i> {{ order.status | capitalize }}
+                                    </span>
+                                </div>
+                                <div class="order-details-grid">
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-briefcase"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Role</span>
+                                            <span class="order-value">{{ order.booked_role | upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">{% if order.booked_role == 'dj' %}Per Event{% else %}Daily Rate{% endif %}</span>
+                                            <span class="order-value">${{ '%.2f' | format(order.daily_rate) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="order-detail-item">
+                                        <span class="order-detail-icon"><i class="fas fa-receipt"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Total</span>
+                                            <span class="order-value">${{ '%.2f' | format(order.total_amount) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="order-detail-item earnings-item">
+                                        <span class="order-detail-icon"><i class="fas fa-wallet"></i></span>
+                                        <div class="order-detail-content">
+                                            <span class="order-label">Your Earnings</span>
+                                            <span class="order-value earnings-highlight">${{ '%.2f' | format(order.daily_rate * 2) }}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 {% if order.status == 'pending' %}
@@ -293,6 +490,7 @@
                             <p>When someone books you, the orders will appear here.</p>
                         </div>
                     {% endif %}
+                    {% endif %}
                 </div>
             </div>
 
@@ -303,9 +501,14 @@
                 <div class="section-card">
                     <div class="section-header">
                         <h2><i class="fas fa-camera"></i> My Posts</h2>
-                        <label class="btn-upload-post" for="post-image-input" aria-label="Upload a new photo post">
-                            <i class="fas fa-plus" aria-hidden="true"></i> Upload Photo
-                        </label>
+                        <div class="posts-header-actions">
+                            {% if posts %}
+                            <span class="post-count-badge">{{ posts|length }} post{{ 's' if posts|length != 1 else '' }}</span>
+                            {% endif %}
+                            <label class="btn-upload-post" for="post-image-input" aria-label="Upload a new photo post">
+                                <i class="fas fa-plus" aria-hidden="true"></i> Upload Photo
+                            </label>
+                        </div>
                         <input type="file" id="post-image-input" accept="image/*" style="display: none;" aria-label="Select image file to upload">
                     </div>
 
@@ -363,11 +566,58 @@
             <!-- Feedback Section          -->
             <!-- ========================= -->
             <div class="profile-tab-pane" id="tab-feedback" role="tabpanel" aria-labelledby="tab-feedback">
+                {% if profile and profile.role == 'client' %}
+                <!-- Feedback Given by Client -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-star"></i> My Reviews</h2>
+                        {% if feedback %}
+                        <span class="feedback-count-badge">{{ feedback|length }} review{{ 's' if feedback|length != 1 else '' }}</span>
+                        {% endif %}
+                    </div>
+                    {% if feedback %}
+                        <div class="feedback-list">
+                            {% for fb in feedback|sort(attribute='created_at', reverse=true) %}
+                            <div class="feedback-card">
+                                <div class="feedback-header">
+                                    <div class="feedback-from-info">
+                                        <div class="feedback-from-avatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="feedback-from-text">
+                                            <span class="feedback-from-name">To: {{ fb.to_username }}</span>
+                                            <span class="feedback-date">{{ fb.created_at }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="feedback-rating">
+                                        {% for i in range(1, 6) %}
+                                            <i class="fas fa-star {% if i <= fb.rating %}star-filled{% else %}star-empty{% endif %}"></i>
+                                        {% endfor %}
+                                        <span class="rating-text">{{ fb.rating }}/5</span>
+                                    </div>
+                                </div>
+                                {% if fb.comment %}
+                                <p class="feedback-comment">{{ fb.comment }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-comment-dots"></i>
+                            <h3>No Reviews Yet</h3>
+                            <p>After completing bookings, you can leave reviews for providers here.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <!-- Feedback Received by Provider -->
                 <!-- Feedback Summary -->
                 {% if feedback and feedback|length > 0 %}
                 <div class="section-card">
                     <div class="section-header">
                         <h2><i class="fas fa-star"></i> Feedback Summary</h2>
+                        <span class="feedback-count-badge">{{ feedback|length }} review{{ 's' if feedback|length != 1 else '' }}</span>
                     </div>
                     <div class="feedback-summary">
                         <div class="feedback-summary-left">
@@ -409,16 +659,21 @@
                             {% for fb in feedback|sort(attribute='created_at', reverse=true) %}
                             <div class="feedback-card">
                                 <div class="feedback-header">
-                                    <span class="feedback-from">
-                                        <i class="fas fa-user"></i> {{ fb.from_username }}
-                                    </span>
-                                    <span class="feedback-date">{{ fb.created_at }}</span>
-                                </div>
-                                <div class="feedback-rating">
-                                    {% for i in range(1, 6) %}
-                                        <i class="fas fa-star {% if i <= fb.rating %}star-filled{% else %}star-empty{% endif %}"></i>
-                                    {% endfor %}
-                                    <span class="rating-text">{{ fb.rating }}/5</span>
+                                    <div class="feedback-from-info">
+                                        <div class="feedback-from-avatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="feedback-from-text">
+                                            <span class="feedback-from-name">{{ fb.from_username }}</span>
+                                            <span class="feedback-date">{{ fb.created_at }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="feedback-rating">
+                                        {% for i in range(1, 6) %}
+                                            <i class="fas fa-star {% if i <= fb.rating %}star-filled{% else %}star-empty{% endif %}"></i>
+                                        {% endfor %}
+                                        <span class="rating-text">{{ fb.rating }}/5</span>
+                                    </div>
                                 </div>
                                 {% if fb.comment %}
                                 <p class="feedback-comment">{{ fb.comment }}</p>
@@ -434,20 +689,16 @@
                         </div>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
 
         </div>
 
-        <!-- Sign Out / Log Out Buttons -->
+        <!-- Sign Out Button -->
         <div class="profile-footer">
-            <form method="POST" action="/profile/signout" id="signout-form" style="display: inline;">
+            <form method="POST" action="/profile/signout" id="signout-form">
                 <button type="submit" class="btn-signout" onclick="return confirm('Are you sure you want to sign out?')" aria-label="Sign out of your account">
                     <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Sign Out
-                </button>
-            </form>
-            <form method="POST" action="/profile/logout" id="logout-form" style="display: inline;">
-                <button type="submit" class="btn-logout" onclick="return confirm('Are you sure you want to log out?')" aria-label="Log out of your account">
-                    <i class="fas fa-door-open" aria-hidden="true"></i> Log Out
                 </button>
             </form>
         </div>

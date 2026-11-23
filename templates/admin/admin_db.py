@@ -56,6 +56,7 @@ def init_db():
             ('nav_bookings_label', 'Bookings', 'navigation', 'Bookings button label'),
             ('nav_chat_label', 'Chat', 'navigation', 'Chat button label'),
             ('nav_notifications_label', 'Notifications', 'navigation', 'Notifications button label'),
+            ('nav_friends_label', 'Friends', 'navigation', 'Friends button label'),
             ('nav_account_label', 'Account', 'navigation', 'Account button label'),
             ('nav_signin_label', 'Sign In', 'navigation', 'Sign In button label'),
             ('nav_menu_label', 'Menu', 'navigation', 'Menu button label'),

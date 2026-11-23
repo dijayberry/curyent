@@ -477,6 +477,30 @@ body {
     font-weight: 700;
 }
 
+/* Provider Discount Row */
+.rate-row.provider-discount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.08);
+    margin: 8px -16px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.rate-row.provider-discount-row i {
+    color: #4caf50;
+}
+
+.rate-row.provider-discount-row span:last-child {
+    color: #4caf50;
+    font-weight: 700;
+}
+
 /* 5th Booking Loyalty Discount Row */
 .rate-row.fifth-loyalty-row {
     display: flex;

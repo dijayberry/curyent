@@ -517,16 +517,19 @@ def caterer():
 @account_bp.route('/account/logi', methods=['GET', 'POST'])
 def logi():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
+        identifier = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         
-        # Check if email exists in database
-        if not db.email_exists(email):
-            # Email not found, redirect to role selection page for registration
+        # Check if identifier (email or username) exists in database
+        user_exists_by_email = db.email_exists(identifier)
+        user_exists_by_username = db.username_exists(identifier)
+        
+        if not user_exists_by_email and not user_exists_by_username:
+            # Identifier not found, redirect to role selection page for registration
             return redirect(url_for('account.about'))
         
-        # Authenticate user
-        user = db.login_user(email, password)
+        # Authenticate user (checks both email and username)
+        user = db.login_user(identifier, password)
         if user:
             # Sync users to other databases
             sync_all_dbs()
@@ -536,7 +539,7 @@ def logi():
             session['username'] = user['username']
             return redirect(url_for('home'))
         else:
-            # Email exists but password is wrong
+            # Identifier exists but password is wrong
             return render_template('account/logi.html', error='Invalid password')
     
     return render_template('account/logi.html')

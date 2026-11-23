@@ -332,15 +332,15 @@ def verify_otp(phone, user_code):
     return False
 
 
-def login_user(email, password):
+def login_user(identifier, password):
     """
-    Authenticate a user by email and password.
+    Authenticate a user by email or username and password.
     Returns the user row if credentials are valid, None otherwise.
     Password is verified using secure hash comparison.
     """
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+    cursor.execute('SELECT * FROM users WHERE email = ? OR username = ?', (identifier, identifier))
     user = cursor.fetchone()
     conn.close()
     
