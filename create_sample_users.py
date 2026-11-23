@@ -41,22 +41,32 @@ photo_names = [
     'picperfect'
 ]
 
+# Venues — realistic business names (hotels, gardens, resorts, lodges, event halls)
 venue_names = [
-    'grand', 'royal', 'elegant', 'luxury', 'prestige', 'majestic', 'imperial',
-    'palace', 'castle', 'garden', 'oasis', 'skyline', 'horizon', 'summit',
-    'meadow', 'lakeside', 'seaside', 'hilltop', 'valley', 'crown'
+    'Mark Hotel', 'Olives Garden', 'Sunset Resort', 'Royal Lodge', 'Grand Ballroom',
+    'Emerald Gardens', 'Skyline Hotel', 'Lakeside Resort', 'Palm Beach Hotel',
+    'Heritage Lodge', 'Crystal Hall', 'Golden Acres', 'Sunrise Garden',
+    'The Grand Pavilion', 'Olive Tree Resort', 'Marigold Hotel', 'Savanna Lodge',
+    'Blue Waters Resort', 'Crown Gardens', 'Elegance Hall'
 ]
 
+# Tents — realistic business names (marquee, event setup companies)
 tent_names = [
-    'elegant', 'classic', 'modern', 'luxury', 'premium', 'royal', 'grand',
-    'celestial', 'marquee', 'canopy', 'shelter', 'dome', 'pavilion', 'gazebo',
-    'tentpro', 'eventshade', 'festivetent', 'partytent', 'weddingtent', 'glamtent'
+    'Royal Marquee', 'Elegant Canopy', 'Grand Tent Co', 'Celestial Events',
+    'Prestige Tents', 'Golden Marquee', 'Luxury Canopy', 'Crystal Dome',
+    'Sunrise Tents', 'Emerald Pavilion', 'Skyline Marquee', 'Heritage Tents',
+    'Olive Branch Events', 'Savanna Marquee', 'Blue Sky Tents',
+    'Crown Canopy', 'Golden Gate Tents', 'Sunset Marquee', 'Pearl Pavilion',
+    'Diamond Tents'
 ]
 
+# Caterers — realistic business names
 cater_names = [
-    'delight', 'flavor', 'taste', 'gourmet', 'savory', 'sweet', 'feast',
-    'banquet', 'cuisine', 'delicacy', 'epicure', 'palate', 'nosh', 'dine',
-    'savor', 'relish', 'banquetpro', 'foodie', 'chefdelight', 'tastebud'
+    'Delight Catering', 'Flavor Kitchen', 'Taste Bites', 'Gourmet Delights',
+    'Savory Feasts', 'Sweet Banquets', 'Feast Masters', 'Banquet Royale',
+    'Cuisine Kings', 'Delicacy Dishes', 'Epicure Table', 'Palate Catering',
+    'Nosh Kitchen', 'Dine Elegance', 'Savor Foods', 'Relish Catering',
+    'Banquet Pro', 'Foodie Delights', 'Chefs Table', 'TasteBud Catering'
 ]
 
 locations = [
@@ -150,9 +160,9 @@ def create_users_in_db(db_path, db_name):
 
     # Venues
     for i, name in enumerate(venue_names):
-        username = f"venue_{name}"
-        email = f"{name}@curyent.com"
-        title = f"{name.title()} Event Venue"
+        username = name.replace(' ', '_').lower()
+        email = f"{name.replace(' ', '').lower()}@curyent.com"
+        title = f"{name} — Event Venue"
         phone = f"+2547{400000000 + i}"
         location = locations[i % len(locations)]
         try:
@@ -169,9 +179,9 @@ def create_users_in_db(db_path, db_name):
 
     # Tents
     for i, name in enumerate(tent_names):
-        username = f"tent_{name}"
-        email = f"{name}@curyent.com"
-        title = f"{name.title()} Tent Services"
+        username = name.replace(' ', '_').lower()
+        email = f"{name.replace(' ', '').lower()}@curyent.com"
+        title = f"{name} — Tent Services"
         phone = f"+2547{500000000 + i}"
         location = locations[i % len(locations)]
         try:
@@ -188,9 +198,9 @@ def create_users_in_db(db_path, db_name):
 
     # Caterers
     for i, name in enumerate(cater_names):
-        username = f"cater_{name}"
-        email = f"{name}@curyent.com"
-        title = f"{name.title()} Catering Services"
+        username = name.replace(' ', '_').replace("'", '').lower()
+        email = f"{name.replace(' ', '').replace("'", '').lower()}@curyent.com"
+        title = f"{name} — Catering Services"
         phone = f"+2547{600000000 + i}"
         location = locations[i % len(locations)]
         try:
@@ -435,9 +445,9 @@ def main():
     print(f"  Clients:       20 (alex, sarah, mike, emma, ...)")
     print(f"  DJs:           20 (dj_beats, dj_mixmaster, dj_spinmaster, ...)")
     print(f"  Photographers: 20 (photo_lens, photo_shutter, photo_capture, ...)")
-    print(f"  Venues:        20 (venue_grand, venue_royal, venue_elegant, ...)")
-    print(f"  Tents:         20 (tent_elegant, tent_classic, tent_modern, ...)")
-    print(f"  Caterers:      20 (cater_delight, cater_flavor, cater_taste, ...)")
+    print(f"  Venues:        20 (mark_hotel, olives_garden, sunset_resort, ...)")
+    print(f"  Tents:         20 (royal_marquee, elegant_canopy, grand_tent_co, ...)")
+    print(f"  Caterers:      20 (delight_catering, flavor_kitchen, taste_bites, ...)")
     print()
     print(f"All users share the password: {PASSWORD}")
     print()
