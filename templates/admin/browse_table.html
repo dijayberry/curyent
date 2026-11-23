@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ table_name }} - {{ db_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-breadcrumb">
+        <a href="/admin/databases"><i class="fas fa-database"></i> Databases</a>
+        <span>/</span>
+        <span>{{ db_name }} / {{ table_name }}</span>
+    </div>
+    <p class="page-description">Viewing {{ total }} total records</p>
+</div>
+
+<div class="table-toolbar">
+    <form class="search-form" method="GET">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" value="{{ search }}" placeholder="Search in all columns...">
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    <div class="pagination-info">
+        Showing {{ offset + 1 }}-{{ min(offset + limit, total) }} of {{ total }}
+    </div>
+</div>
+
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                {% for col in columns %}
+                <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if rows %}
+            {% for row in rows %}
+            <tr>
+                {% for col in columns %}
+                <td>
+                    {% if row[col] is none %}
+                    <span class="null-value">NULL</span>
+                    {% elif row[col] is string and row[col]|length > 50 %}
+                    <title>{{ row[col] }}</title>
+                    {{ row[col][:50] }}...
+                    {% else %}
+                    {{ row[col] }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="{{ columns | length }}" class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    No records found
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if total > limit %}
+<div class="pagination">
+    {% if offset > 0 %}
+    <a href="?offset={{ offset - limit }}&limit={{ limit }}&search={{ search }}" class="btn btn-secondary">
+        <i class="fas fa-chevron-left"></i> Previous
+    </a>
+    {% endif %}
+
+    <span class="page-info">Page {{ (offset // limit) + 1 }}</span>
+
+    {% if offset + limit < total %}
+    <a href="?offset={{ offset + limit }}&limit={{ limit }}&search={{ search }}" class="btn btn-secondary">
+        Next <i class="fas fa-chevron-right"></i>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

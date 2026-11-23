@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Databases{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-description">Browse and inspect all database tables across your CURYENT application.</p>
+</div>
+
+<div class="databases-list">
+    {% for db in db_info %}
+    <div class="db-card">
+        <div class="db-card-header">
+            <i class="fas fa-database"></i>
+            <h3>{{ db.name }}</h3>
+            <span class="db-table-count">{{ db.tables | length }} tables</span>
+        </div>
+
+        {% if db.error %}
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ db.error }}
+        </div>
+        {% endif %}
+
+        {% if db.tables %}
+        <div class="tables-list">
+            {% for table in db.tables %}
+            <a href="/admin/table/{{ db.name }}/{{ table.name }}" class="table-item">
+                <div class="table-info">
+                    <i class="fas fa-table"></i>
+                    <span class="table-name">{{ table.name }}</span>
+                    <span class="table-row-count">{{ table.row_count }} rows</span>
+                </div>
+                <div class="table-columns">
+                    {% for col in table.columns[:5] %}
+                    <span class="column-tag">{{ col }}</span>
+                    {% endfor %}
+                    {% if table.columns | length > 5 %}
+                    <span class="column-tag">+{{ table.columns | length - 5 }} more</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

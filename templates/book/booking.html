@@ -45,6 +45,27 @@
             </a>
         </div>
 
+        <!-- Multi-booking bar -->
+        <div class="multi-booking-bar" id="multi-booking-bar" style="display: none;">
+            <div class="multi-bar-content">
+                <span class="multi-bar-count">
+                    <i class="fas fa-shopping-cart"></i> <span id="multi-selected-count">0</span> providers selected
+                </span>
+                <span class="multi-bar-discount" id="multi-discount-badge">
+                    <i class="fas fa-tag"></i> 10% discount applied!
+                </span>
+                <span class="multi-bar-total">
+                    Total: KES <span id="multi-bar-total">0</span> <small>(Save KES <span id="multi-bar-save">0</span>)</small>
+                </span>
+                <button class="multi-book-btn" onclick="openMultiBookingModal()">
+                    <i class="fas fa-book"></i> Book All with Discount
+                </button>
+                <button class="multi-clear-btn" onclick="clearMultiSelection()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </div>
+
         <!-- Tabs Navigation -->
         <div class="tabs-nav">
             <button class="tab-btn active" data-tab="profiles">
@@ -71,6 +92,10 @@
                 {% for profile in profiles %}
                 <div class="profile-card" data-id="{{ profile['id'] }}" data-role="{{ profile['role'] }}" data-rate="{{ profile['daily_rate'] }}">
                     <div class="profile-card-header">
+                        <label class="multi-select-checkbox" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="provider-checkbox" data-id="{{ profile['id'] }}" data-role="{{ profile['role'] }}" data-rate="{{ profile['daily_rate'] }}" data-username="{{ profile['username'] }}" onchange="updateMultiSelection()">
+                            <span class="checkbox-custom"></span>
+                        </label>
                         <div class="profile-avatar">
                             {% if profile['profile_image'] %}
                             <img src="{{ profile['profile_image'] }}" alt="{{ profile['username'] }}" class="profile-avatar-img">
@@ -165,9 +190,18 @@
                         </div>
                     </div>
                     <div class="booking-details">
+                        {% if booking.get('is_multi_booking') and booking.get('discount_amount', 0) > 0 %}
+                        <div class="booking-amount multi-booking-amount">
+                            <span class="multi-badge"><i class="fas fa-tags"></i> Multi-Booking (10% off)</span>
+                            <span>Original: KES {{ (booking['total_amount'] + booking['discount_amount']) | int }}</span>
+                            <span class="discount-saved">Saved: KES {{ booking['discount_amount'] | int }}</span>
+                            <span class="final-price">Price: KES {{ booking['total_amount'] | int }}</span>
+                        </div>
+                        {% else %}
                         <div class="booking-amount">
                             <span>Price: KES {{ booking['total_amount'] | int }}</span>
                         </div>
+                        {% endif %}
                         {% if booking['celebration_type'] %}
                         <div class="booking-celebration-type">
                             <i class="fas fa-glass-cheers"></i> {{ booking['celebration_type'] }}
@@ -485,6 +519,14 @@
                             <span>Price</span>
                             <span id="modal-total-display">KES 0</span>
                         </div>
+                        <div class="rate-row fifth-loyalty-row" id="modal-fifth-loyalty" style="display: none;">
+                            <span><i class="fas fa-star"></i> 5th Booking Loyalty Discount (5%)</span>
+                            <span id="modal-fifth-discount-amount">-KES 0</span>
+                        </div>
+                        <div class="rate-row you-pay" id="modal-final-row" style="display: none;">
+                            <span>You Pay</span>
+                            <span id="modal-final-display">KES 0</span>
+                        </div>
                     </div>
 
                     <div class="modal-actions">
@@ -493,6 +535,117 @@
                         </button>
                         <button type="submit" class="confirm-btn">
                             <i class="fas fa-book"></i> Confirm Booking
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-Booking Modal -->
+    <div class="modal-overlay" id="multi-booking-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-tags"></i> Book Multiple Providers</h2>
+                <button class="modal-close" onclick="closeMultiBookingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="multi-discount-banner">
+                    <i class="fas fa-tag"></i>
+                    <span id="multi-discount-banner-text"><strong>10% Discount</strong> applied for booking multiple roles!</span>
+                </div>
+                <div class="multi-selected-list" id="multi-selected-list"></div>
+                <div class="multi-price-summary">
+                    <div class="multi-price-row">
+                        <span>Original Total</span>
+                        <span>KES <span id="multi-original-total">0</span></span>
+                    </div>
+                    <div class="multi-price-row discount-row">
+                        <span id="multi-discount-label">10% Discount</span>
+                        <span>-KES <span id="multi-discount-amount">0</span></span>
+                    </div>
+                    <div class="multi-price-row fifth-bonus-row" id="multi-fifth-bonus-row" style="display: none;">
+                        <span><i class="fas fa-star"></i> 5th Booking Bonus (5%)</span>
+                        <span>-KES <span id="multi-fifth-bonus-amount">0</span></span>
+                    </div>
+                    <div class="multi-price-row total-row">
+                        <span>You Pay</span>
+                        <span>KES <span id="multi-final-total">0</span></span>
+                    </div>
+                </div>
+                <form id="multi-booking-form" onsubmit="submitMultiBooking(event)">
+                    <!-- Celebration Type -->
+                    <div class="form-group">
+                        <label for="multi-celebration-type">
+                            <i class="fas fa-glass-cheers"></i> Celebration Type *
+                        </label>
+                        <select id="multi-celebration-type" required>
+                            <option value="">Select a celebration type</option>
+                        </select>
+                    </div>
+
+                    <!-- Celebration Title -->
+                    <div class="form-group">
+                        <label for="multi-celebration-title">
+                            <i class="fas fa-heading"></i> Celebration Title *
+                        </label>
+                        <input type="text" id="multi-celebration-title" placeholder="e.g. John & Jane's Wedding" required maxlength="200">
+                    </div>
+
+                    <!-- Venue Location -->
+                    <div class="form-group">
+                        <label for="multi-venue-location">
+                            <i class="fas fa-map-marker-alt"></i> Venue Location *
+                        </label>
+                        <input type="text" id="multi-venue-location" placeholder="e.g. Nairobi, Westlands" required maxlength="300">
+                    </div>
+
+                    <!-- Event Start Date -->
+                    <div class="form-group">
+                        <label for="multi-event-start-date">
+                            <i class="fas fa-calendar-day"></i> Day of Celebration *
+                        </label>
+                        <input type="date" id="multi-event-start-date" required>
+                    </div>
+
+                    <!-- Event End Date -->
+                    <div class="form-group">
+                        <label for="multi-event-end-date">
+                            <i class="fas fa-calendar-day"></i> Event End Date
+                        </label>
+                        <input type="date" id="multi-event-end-date">
+                    </div>
+
+                    <!-- Start Time and End Time -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="multi-start-time">
+                                <i class="fas fa-clock"></i> Start Time *
+                            </label>
+                            <input type="time" id="multi-start-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="multi-end-time">
+                                <i class="fas fa-clock"></i> End Time *
+                            </label>
+                            <input type="time" id="multi-end-time" required>
+                        </div>
+                    </div>
+
+                    <!-- Attendees Count -->
+                    <div class="form-group">
+                        <label for="multi-attendees-count">
+                            <i class="fas fa-users"></i> Number of Attendees *
+                        </label>
+                        <input type="number" id="multi-attendees-count" placeholder="e.g. 150" min="1" required>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-btn" onclick="closeMultiBookingModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="confirm-btn">
+                            <i class="fas fa-tags"></i> Confirm Multi-Booking
                         </button>
                     </div>
                 </form>

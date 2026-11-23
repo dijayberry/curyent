@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CURYENT - Event Networking</title>
+    <title>{{ ui.get('site_title', 'CURYENT - Event Networking') }}</title>
     <link rel="icon" type="image/png" href="/logo.png"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/home.css">
@@ -13,20 +13,20 @@
         <div class="header-name-container">
             <h1 class="name-logo">
                 <img src="/logo.png" alt="CURYENT Logo">
-                CURYENT
+                {{ ui.get('site_name', 'CURYENT') }}
             </h1>
         </div>
 
         <div class="nav-bar">
             <!-- Home icon with dropdown -->
             <div class="home-btn">
-                <a href="/"><i class="fas fa-house"></i> Home</a>
+                <a href="/"><i class="fas fa-house"></i> {{ ui.get('nav_home_label', 'Home') }}</a>
                 <ul class="home-dropdown">
-                    <li><a href="#djs"><i class="fas fa-music"></i>DJs</a></li>
-                    <li><a href="#venues"><i class="fas fa-calendar-days"></i>Venues</a></li>
-                    <li><a href="#photographers"><i class="fas fa-camera"></i>Photographers</a></li>
-                    <li><a href="#tents"><i class="fas fa-campground"></i>Tents</a></li>
-                    <li><a href="#caterer"><i class="fas fa-utensils"></i>Caterer</a></li>
+                    <li><a href="#djs"><i class="fas fa-music"></i>{{ ui.get('home_dropdown_djs', 'DJs') }}</a></li>
+                    <li><a href="#venues"><i class="fas fa-calendar-days"></i>{{ ui.get('home_dropdown_venues', 'Venues') }}</a></li>
+                    <li><a href="#photographers"><i class="fas fa-camera"></i>{{ ui.get('home_dropdown_photographers', 'Photographers') }}</a></li>
+                    <li><a href="#tents"><i class="fas fa-campground"></i>{{ ui.get('home_dropdown_tents', 'Tents') }}</a></li>
+                    <li><a href="#caterer"><i class="fas fa-utensils"></i>{{ ui.get('home_dropdown_caterer', 'Caterer') }}</a></li>
                 </ul>
             </div>
 
@@ -36,7 +36,7 @@
                     <input
                         type="text"
                         id="search-input"
-                        placeholder="Search DJs, Events, Photographers, Tents..."
+                        placeholder="{{ ui.get('search_placeholder', 'Search DJs, Events, Photographers, Tents...') }}"
                         autocomplete="off"
                     >
                     <button type="button" id="search-btn">
@@ -48,22 +48,22 @@
 
             <!-- Menu button: shown only on small screens -->
             <div class="nav-btn">
-                <button><i class="fas fa-bars"></i> Menu</button>
+                <button><i class="fas fa-bars"></i> {{ ui.get('nav_menu_label', 'Menu') }}</button>
                 <ul class="nav-dropdown">
-                    <li><a href="/bookings"><i class="fas fa-book"></i>Bookings</a></li>
-                    <li><a href="/chat"><i class="fas fa-comments"></i>Chat <span class="notification-badge" id="chat-badge-mobile" style="display:none;">0</span></a></li>
-                    <li><a href="/notifications"><i class="fas fa-bell"></i>Notifications <span class="notification-badge" id="notif-badge-mobile" style="display:none;">0</span></a></li>
-                    <li><a href="/account/logi"><i class="fas fa-sign-in-alt"></i>Sign In</a></li>
+                    <li><a href="/bookings"><i class="fas fa-book"></i>{{ ui.get('nav_bookings_label', 'Bookings') }}</a></li>
+                    <li><a href="/chat"><i class="fas fa-comments"></i>{{ ui.get('nav_chat_label', 'Chat') }} <span class="notification-badge" id="chat-badge-mobile" style="display:none;">0</span></a></li>
+                    <li><a href="/notifications"><i class="fas fa-bell"></i>{{ ui.get('nav_notifications_label', 'Notifications') }} <span class="notification-badge" id="notif-badge-mobile" style="display:none;">0</span></a></li>
+                    <li><a href="/account/logi"><i class="fas fa-sign-in-alt"></i>{{ ui.get('nav_signin_label', 'Sign In') }}</a></li>
                 </ul>
             </div>
         </div>
 
         <!-- Nav links: shown directly on big screens -->
         <ul class="nav-links">
-            <li><a href="/bookings"><i class="fas fa-book"></i>Bookings</a></li>
-            <li><a href="/chat"><i class="fas fa-comments"></i>Chat <span class="notification-badge" id="chat-badge-desktop" style="display:none;">0</span></a></li>
-            <li><a href="/notifications"><i class="fas fa-bell"></i>Notifications <span class="notification-badge" id="notif-badge-desktop" style="display:none;">0</span></a></li>
-            <li><a href="/account"><i class="fas fa-user"></i>Account</a></li>
+            <li><a href="/bookings"><i class="fas fa-book"></i>{{ ui.get('nav_bookings_label', 'Bookings') }}</a></li>
+            <li><a href="/chat"><i class="fas fa-comments"></i>{{ ui.get('nav_chat_label', 'Chat') }} <span class="notification-badge" id="chat-badge-desktop" style="display:none;">0</span></a></li>
+            <li><a href="/notifications"><i class="fas fa-bell"></i>{{ ui.get('nav_notifications_label', 'Notifications') }} <span class="notification-badge" id="notif-badge-desktop" style="display:none;">0</span></a></li>
+            <li><a href="/account"><i class="fas fa-user"></i>{{ ui.get('nav_account_label', 'Account') }}</a></li>
         </ul>
 
         <!-- Profile section: shown only on big screens -->
@@ -86,7 +86,7 @@
         {% else %}
         <div class="header-profile">
             <a href="/account/logi" class="header-sign-in-link">
-                <i class="fas fa-sign-in-alt"></i> Sign In
+                <i class="fas fa-sign-in-alt"></i> {{ ui.get('nav_signin_label', 'Sign In') }}
             </a>
         </div>
         {% endif %}
@@ -96,34 +96,34 @@
     <div class="role" id="role">
         <div class="role-overlay">
             <div class="role-card">
-                <h2><i class="fas fa-user-circle"></i> Choose Your Role</h2>
+                <h2><i class="fas fa-user-circle"></i> {{ ui.get('role_choose_title', 'Choose Your Role') }}</h2>
                 <div class="role-grid">
                     <a href="/account/client" class="role-item">
                         <i class="fas fa-user"></i>
-                        <span>Client</span>
+                        <span>{{ ui.get('role_client_label', 'Client') }}</span>
                     </a>
                     <a href="/account/djs" class="role-item">
                         <i class="fas fa-music"></i>
-                        <span>DJ</span>
+                        <span>{{ ui.get('role_dj_label', 'DJ') }}</span>
                     </a>
                     <a href="/account/venue" class="role-item">
                         <i class="fas fa-calendar-days"></i>
-                        <span>Venue</span>
+                        <span>{{ ui.get('role_venue_label', 'Venue') }}</span>
                     </a>
                     <a href="/account/photographer" class="role-item">
                         <i class="fas fa-camera"></i>
-                        <span>Photographer</span>
+                        <span>{{ ui.get('role_photographer_label', 'Photographer') }}</span>
                     </a>
                     <a href="/account/tents" class="role-item">
                         <i class="fas fa-campground"></i>
-                        <span>Tents</span>
+                        <span>{{ ui.get('role_tents_label', 'Tents') }}</span>
                     </a>
                     <a href="/account/caterer" class="role-item">
                         <i class="fas fa-utensils"></i>
-                        <span>Caterer</span>
+                        <span>{{ ui.get('role_caterer_label', 'Caterer') }}</span>
                     </a>
                 </div>
-                <button class="role-close" id="role-close"><i class="fas fa-times"></i> Close</button>
+                <button class="role-close" id="role-close"><i class="fas fa-times"></i> {{ ui.get('btn_close', 'Close') }}</button>
             </div>
         </div>
     </div>
@@ -134,12 +134,12 @@
         <section class="role-section" id="djs">
             <div class="role-section-header">
                 <div>
-                    <h2><i class="fas fa-music"></i> DJs</h2>
-                    <p>Find the best DJs for your event</p>
+                    <h2><i class="fas fa-music"></i> {{ ui.get('home_djs_title', 'DJs') }}</h2>
+                    <p>{{ ui.get('home_djs_description', 'Find the best DJs for your event') }}</p>
                 </div>
                 <div class="view-all-wrapper">
                     <button class="view-all-btn" data-role="dj">
-                        <i class="fas fa-th"></i> View All
+                        <i class="fas fa-th"></i> {{ ui.get('btn_view_all', 'View All') }}
                     </button>
                     <div class="all-users-dropdown" id="dj-dropdown">
                         <div class="profile-grid">
@@ -154,7 +154,7 @@
                     <div class="slide-track">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading DJs...</p>
+                            <p>{{ ui.get('loading_djs', 'Loading DJs...') }}</p>
                         </div>
                     </div>
                 </div>
@@ -167,12 +167,12 @@
         <section class="role-section" id="venues">
             <div class="role-section-header">
                 <div>
-                    <h2><i class="fas fa-calendar-days"></i> Venues</h2>
-                    <p>Discover amazing venues</p>
+                    <h2><i class="fas fa-calendar-days"></i> {{ ui.get('home_venues_title', 'Venues') }}</h2>
+                    <p>{{ ui.get('home_venues_description', 'Discover amazing venues') }}</p>
                 </div>
                 <div class="view-all-wrapper">
                     <button class="view-all-btn" data-role="venue">
-                        <i class="fas fa-th"></i> View All
+                        <i class="fas fa-th"></i> {{ ui.get('btn_view_all', 'View All') }}
                     </button>
                     <div class="all-users-dropdown" id="venues-dropdown">
                         <div class="profile-grid">
@@ -187,7 +187,7 @@
                     <div class="slide-track">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading Venues...</p>
+                            <p>{{ ui.get('loading_venues', 'Loading Venues...') }}</p>
                         </div>
                     </div>
                 </div>
@@ -200,12 +200,12 @@
         <section class="role-section" id="photographers">
             <div class="role-section-header">
                 <div>
-                    <h2><i class="fas fa-camera"></i> Photographers</h2>
-                    <p>Capture your special moments</p>
+                    <h2><i class="fas fa-camera"></i> {{ ui.get('home_photographers_title', 'Photographers') }}</h2>
+                    <p>{{ ui.get('home_photographers_description', 'Capture your special moments') }}</p>
                 </div>
                 <div class="view-all-wrapper">
                     <button class="view-all-btn" data-role="photographer">
-                        <i class="fas fa-th"></i> View All
+                        <i class="fas fa-th"></i> {{ ui.get('btn_view_all', 'View All') }}
                     </button>
                     <div class="all-users-dropdown" id="photographers-dropdown">
                         <div class="profile-grid">
@@ -220,7 +220,7 @@
                     <div class="slide-track">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading Photographers...</p>
+                            <p>{{ ui.get('loading_photographers', 'Loading Photographers...') }}</p>
                         </div>
                     </div>
                 </div>
@@ -233,12 +233,12 @@
         <section class="role-section" id="tents">
             <div class="role-section-header">
                 <div>
-                    <h2><i class="fas fa-campground"></i> Tents</h2>
-                    <p>Tent rental services for your event</p>
+                    <h2><i class="fas fa-campground"></i> {{ ui.get('home_tents_title', 'Tents') }}</h2>
+                    <p>{{ ui.get('home_tents_description', 'Tent rental services for your event') }}</p>
                 </div>
                 <div class="view-all-wrapper">
                     <button class="view-all-btn" data-role="tents">
-                        <i class="fas fa-th"></i> View All
+                        <i class="fas fa-th"></i> {{ ui.get('btn_view_all', 'View All') }}
                     </button>
                     <div class="all-users-dropdown" id="tents-dropdown">
                         <div class="profile-grid">
@@ -253,7 +253,7 @@
                     <div class="slide-track">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading Tents...</p>
+                            <p>{{ ui.get('loading_tents', 'Loading Tents...') }}</p>
                         </div>
                     </div>
                 </div>
@@ -266,12 +266,12 @@
         <section class="role-section" id="caterer">
             <div class="role-section-header">
                 <div>
-                    <h2><i class="fas fa-utensils"></i> Caterer</h2>
-                    <p>Delicious catering for your event</p>
+                    <h2><i class="fas fa-utensils"></i> {{ ui.get('home_caterer_title', 'Caterer') }}</h2>
+                    <p>{{ ui.get('home_caterer_description', 'Delicious catering for your event') }}</p>
                 </div>
                 <div class="view-all-wrapper">
                     <button class="view-all-btn" data-role="caterer">
-                        <i class="fas fa-th"></i> View All
+                        <i class="fas fa-th"></i> {{ ui.get('btn_view_all', 'View All') }}
                     </button>
                     <div class="all-users-dropdown" id="caterer-dropdown">
                         <div class="profile-grid">
@@ -286,7 +286,7 @@
                     <div class="slide-track">
                         <div class="loading-placeholder">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading Caterers...</p>
+                            <p>{{ ui.get('loading_caterers', 'Loading Caterers...') }}</p>
                         </div>
                     </div>
                 </div>

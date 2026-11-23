@@ -1,0 +1,178 @@
+{% extends "admin/base.html" %}
+
+{% block title %}UI Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-description">Customize button text, labels, colors, and other UI elements across your entire site — changes apply instantly without editing code.</p>
+</div>
+
+<!-- Category Tabs -->
+<div class="category-tabs">
+    {% for category in categories %}
+    <button class="tab-btn {% if loop.first %}active{% endif %}" onclick="showCategory('{{ category }}', this)">
+        <i class="fas fa-{% if category == 'navigation' %}compass{% elif category == 'home_sections' %}home{% elif category == 'role_selection' %}user-tag{% elif category == 'buttons' %}mouse-pointer{% elif category == 'branding' %}tag{% elif category == 'loading' %}spinner{% elif category == 'colors' %}palette{% else %}cog{% endif %}"></i>
+        {{ category | replace('_', ' ') | title }}
+    </button>
+    {% endfor %}
+</div>
+
+<!-- Config Forms -->
+<div class="config-sections">
+    {% for category, items in configs.items() %}
+    <div class="config-section {% if not loop.first %}hidden{% endif %}" data-category="{{ category }}">
+        <div class="section-card">
+            <h3 class="section-title">
+                <i class="fas fa-{% if category == 'navigation' %}compass{% elif category == 'home_sections' %}home{% elif category == 'role_selection' %}user-tag{% elif category == 'buttons' %}mouse-pointer{% elif category == 'branding' %}tag{% elif category == 'loading' %}spinner{% elif category == 'colors' %}palette{% else %}cog{% endif %}"></i>
+                {{ category | replace('_', ' ') | title }}
+            </h3>
+
+            <div class="config-grid">
+                {% for item in items %}
+                <div class="config-item">
+                    <label for="config_{{ item.key }}">
+                        {{ item.description }}
+                        <span class="config-key">{{ item.key }}</span>
+                    </label>
+                    {% if item.key.startswith('color_') %}
+                    <div class="color-input-wrapper">
+                        <input type="color" id="color_{{ item.key }}" value="{{ item.value }}"
+                               onchange="syncColorToText('{{ item.key }}', this.value)">
+                        <input type="text" id="config_{{ item.key }}" value="{{ item.value }}"
+                               onchange="syncTextToColor('{{ item.key }}', this.value)"
+                               placeholder="#hex color">
+                    </div>
+                    {% else %}
+                    <input type="text" id="config_{{ item.key }}" value="{{ item.value }}"
+                           data-key="{{ item.key }}"
+                           placeholder="{{ item.description }}">
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="section-actions">
+                <button class="btn btn-primary" onclick="saveCategory('{{ category }}')">
+                    <i class="fas fa-save"></i> Save {{ category | replace('_', ' ') | title }}
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="global-actions">
+    <button class="btn btn-success" onclick="saveAllConfigs()">
+        <i class="fas fa-check-circle"></i> Save All Changes
+    </button>
+    <button class="btn btn-warning" onclick="resetAllConfigs()">
+        <i class="fas fa-undo"></i> Reset to Defaults
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showCategory(category, btn) {
+    // Hide all sections
+    document.querySelectorAll('.config-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    // Remove active from all tabs
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    // Show selected section
+    document.querySelector(`.config-section[data-category="${category}"]`).classList.remove('hidden');
+    btn.classList.add('active');
+}
+
+function syncColorToText(key, value) {
+    document.getElementById('config_' + key).value = value;
+}
+
+function syncTextToColor(key, value) {
+    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+        document.getElementById('color_' + key).value = value;
+    }
+}
+
+function saveCategory(category) {
+    const section = document.querySelector(`.config-section[data-category="${category}"]`);
+    const inputs = section.querySelectorAll('input[type="text"][data-key]');
+    const data = {};
+
+    inputs.forEach(input => {
+        data[input.dataset.key] = input.value;
+    });
+
+    // Also handle color inputs
+    section.querySelectorAll('input[type="color"]').forEach(input => {
+        const key = input.id.replace('color_', '');
+        data[key] = input.value;
+    });
+
+    fetch('/admin/api/ui-config/batch', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast(category + ' settings saved!', 'success');
+        }
+    })
+    .catch(error => {
+        showToast('Error saving: ' + error, 'error');
+    });
+}
+
+function saveAllConfigs() {
+    const allInputs = document.querySelectorAll('input[type="text"][data-key]');
+    const data = {};
+
+    allInputs.forEach(input => {
+        data[input.dataset.key] = input.value;
+    });
+
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+        const key = input.id.replace('color_', '');
+        data[key] = input.value;
+    });
+
+    fetch('/admin/api/ui-config/batch', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('All settings saved!', 'success');
+        }
+    })
+    .catch(error => {
+        showToast('Error saving: ' + error, 'error');
+    });
+}
+
+function resetAllConfigs() {
+    if (confirm('Are you sure you want to reset all UI settings to their defaults?')) {
+        fetch('/admin/api/ui-config/reset', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showToast('Settings reset to defaults', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        })
+        .catch(error => {
+            showToast('Error resetting: ' + error, 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -189,6 +189,10 @@ def init_book_db():
         ('start_time', 'TEXT'),
         ('end_time', 'TEXT'),
         ('attendees_count', 'INTEGER'),
+        ('discount_percentage', 'REAL DEFAULT 0'),
+        ('discount_amount', 'REAL DEFAULT 0'),
+        ('is_multi_booking', 'INTEGER DEFAULT 0'),
+        ('multi_booking_group_id', 'INTEGER'),
     ]
 
     # Get existing columns
@@ -451,18 +455,35 @@ def create_booking():
     # The charging fee (platform fee) is 0.8x, the remaining 1.0x goes to the booked user
     daily_rate = float(daily_rate)
     charging_fee = daily_rate * 0.8  # 0.8x is the platform fee
-    total_amount = daily_rate * 1.8  # total = 1.8 * daily_rate
+    original_total = daily_rate * 1.8  # total = 1.8 * daily_rate
 
+    # Check loyalty discount: 5% off on every 5th booking (5th, 10th, 15th, ...)
     conn = get_book_db()
     cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) as count FROM bookings WHERE booker_id = ?', (user_id,))
+    previous_bookings = cursor.fetchone()['count']
+    current_booking_number = previous_bookings + 1  # This booking will be the Nth
+    is_fifth_booking = (current_booking_number % 5 == 0)
+
+    discount_percentage = 0.0
+    discount_amount = 0.0
+    total_amount = original_total
+
+    if is_fifth_booking:
+        discount_percentage = 5.0
+        discount_amount = original_total * (discount_percentage / 100)
+        total_amount = original_total - discount_amount
+
     cursor.execute('''
         INSERT INTO bookings (booker_id, booked_id, booked_role, daily_rate, charging_fee, total_amount, status,
                               event_start_date, event_end_date, celebration_type, celebration_title,
-                              venue_location, start_time, end_time, attendees_count)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?)
+                              venue_location, start_time, end_time, attendees_count,
+                              discount_percentage, discount_amount, is_multi_booking)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (user_id, booked_id, booked_role, daily_rate, charging_fee, total_amount,
           event_start_date, event_end_date, celebration_type, celebration_title,
-          venue_location, start_time, end_time, int(attendees_count)))
+          venue_location, start_time, end_time, int(attendees_count),
+          discount_percentage, discount_amount, 0))
     conn.commit()
     booking_id = cursor.lastrowid
 
@@ -500,11 +521,15 @@ def create_booking():
         pass
 
     # Notify the booker that their order was sent successfully
+    booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}. Awaiting provider acceptance before payment.'
+    if is_fifth_booking:
+        booker_noti_msg = f'Your booking request for {celebration_title} has been sent to {booked_username}! You got a 5% loyalty discount (booking #{current_booking_number}). Save KES {discount_amount:.0f}!'
+
     try:
         noti_module.create_notification(
             user_id=user_id,
             title='Order placed',
-            message=f'Your booking request for {celebration_title} has been sent to {booked_username}. Awaiting provider acceptance before payment.',
+            message=booker_noti_msg,
             notification_type='booking_request',
             related_item_id=booking_id,
             priority='low',
@@ -516,13 +541,273 @@ def create_booking():
 
     conn.close()
 
-    return jsonify({
+    response_data = {
         'success': True,
         'message': 'Booking request sent successfully — awaiting provider acceptance',
         'booking_id': booking_id,
         'total_amount': total_amount,
         'charging_fee': charging_fee
-    })
+    }
+    if is_fifth_booking:
+        response_data['message'] = f'Booking sent! You got a 5% loyalty discount (booking #{current_booking_number}). Save KES {discount_amount:.0f}!'
+        response_data['is_fifth_booking'] = True
+        response_data['discount_percentage'] = discount_percentage
+        response_data['discount_amount'] = discount_amount
+        response_data['original_total'] = original_total
+
+    return jsonify(response_data)
+
+
+@book_bp.route('/api/book/loyalty-check', methods=['GET'])
+def loyalty_check():
+    """Check if the current user's next booking qualifies for the 5th-booking loyalty discount."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'is_fifth_booking': False, 'booking_number': 0}), 200
+
+    conn = get_book_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) as count FROM bookings WHERE booker_id = ?', (user_id,))
+    previous_bookings = cursor.fetchone()['count']
+    current_booking_number = previous_bookings + 1
+    conn.close()
+
+    is_fifth = (current_booking_number % 5 == 0)
+    return jsonify({
+        'is_fifth_booking': is_fifth,
+        'booking_number': current_booking_number
+    }), 200
+
+
+@book_bp.route('/api/book/multi', methods=['POST'])
+def create_multi_booking():
+    """
+    Create multiple bookings at once for different roles.
+    If 2 or more different roles are booked, apply a 10% discount on each booking's total.
+    Request body: {
+        "providers": [
+            {"booked_id": 1, "booked_role": "dj", "daily_rate": 5000},
+            {"booked_id": 2, "booked_role": "photographer", "daily_rate": 3000},
+            ...
+        ],
+        "event_start_date": "2025-12-25",
+        "event_end_date": "2025-12-25",
+        "celebration_type": "Wedding",
+        "celebration_title": "John & Jane's Wedding",
+        "venue_location": "Nairobi",
+        "start_time": "10:00",
+        "end_time": "22:00",
+        "attendees_count": 150
+    }
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Please log in'}), 401
+
+    data = request.get_json()
+    providers = data.get('providers', [])
+    
+    if not providers or len(providers) < 2:
+        return jsonify({'success': False, 'message': 'Select at least 2 providers for a multi-booking discount'}), 400
+
+    # Event details
+    event_start_date = data.get('event_start_date')
+    event_end_date = data.get('event_end_date')
+    celebration_type = data.get('celebration_type', '').strip()
+    celebration_title = data.get('celebration_title', '').strip()
+    venue_location = data.get('venue_location', '').strip()
+    start_time = data.get('start_time', '').strip()
+    end_time = data.get('end_time', '').strip()
+    attendees_count = data.get('attendees_count')
+
+    # Validate required fields
+    if not event_start_date:
+        return jsonify({'success': False, 'message': 'Event start date is required'}), 400
+    if not celebration_type:
+        return jsonify({'success': False, 'message': 'Celebration type is required'}), 400
+    if not celebration_title:
+        return jsonify({'success': False, 'message': 'Celebration title is required'}), 400
+    if not venue_location:
+        return jsonify({'success': False, 'message': 'Venue location is required'}), 400
+    if not start_time or not end_time:
+        return jsonify({'success': False, 'message': 'Event start and end time are required'}), 400
+    if not attendees_count or int(attendees_count) <= 0:
+        return jsonify({'success': False, 'message': 'Number of attendees is required'}), 400
+
+    # Check for duplicate roles — each role can only be booked once
+    roles = [p.get('booked_role') for p in providers]
+    if len(roles) != len(set(roles)):
+        return jsonify({'success': False, 'message': 'You cannot book the same role twice'}), 400
+
+    # Validate each provider
+    for p in providers:
+        if not all([p.get('booked_id'), p.get('booked_role'), p.get('daily_rate')]):
+            return jsonify({'success': False, 'message': 'Missing required fields for a provider'}), 400
+
+    # Check booking constraints for each provider
+    for p in providers:
+        allowed, reason = can_book(user_id, p['booked_id'], p['booked_role'])
+        if not allowed:
+            return jsonify({'success': False, 'message': f"{p['booked_role'].capitalize()}: {reason}"}), 400
+
+    # Calculate discount: 10% off each booking when booking 2+ roles
+    # Bonus: if exactly 5 roles are booked, the 5th booking gets an additional 5% discount
+    base_discount_percentage = 10.0
+    is_five_booking = len(providers) == 5
+    fifth_bonus_discount = 5.0  # Extra 5% on the 5th booking when all 5 roles are booked
+
+    conn = get_book_db()
+    cursor = conn.cursor()
+
+    booking_ids = []
+    total_original = 0
+    total_discount = 0
+    total_final = 0
+    fifth_booking_discount = 0  # Track the extra 5th-row discount
+
+    # Get usernames for notifications
+    booker_username = ''
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT username FROM users WHERE id = ?', (user_id,))
+        booker_user = main_cursor.fetchone()
+        main_conn.close()
+        if booker_user:
+            booker_username = booker_user['username']
+    except Exception:
+        pass
+
+    for idx, p in enumerate(providers):
+        daily_rate = float(p['daily_rate'])
+        charging_fee = daily_rate * 0.8
+        original_total = daily_rate * 1.8
+
+        # Apply base 10% discount
+        discount_amount = original_total * (base_discount_percentage / 100)
+
+        # Apply extra 5% discount on the 5th booking (index 4) when all 5 roles are booked
+        fifth_bonus = 0.0
+        effective_discount_percentage = base_discount_percentage
+        if is_five_booking and idx == 4:
+            # Additional 5% off the already-discounted price
+            fifth_bonus = (original_total - discount_amount) * (fifth_bonus_discount / 100)
+            discount_amount += fifth_bonus
+            effective_discount_percentage = base_discount_percentage + 5.0
+
+        final_total = original_total - discount_amount
+
+        total_original += original_total
+        total_discount += discount_amount
+        total_final += final_total
+        if idx == 4 and is_five_booking:
+            fifth_booking_discount = fifth_bonus
+
+        # 18 columns: booker_id, booked_id, booked_role, daily_rate, charging_fee, total_amount, status,
+        # event_start_date, event_end_date, celebration_type, celebration_title, venue_location,
+        # start_time, end_time, attendees_count, discount_percentage, discount_amount, is_multi_booking
+        cursor.execute('''
+            INSERT INTO bookings (
+                booker_id, booked_id, booked_role, daily_rate, charging_fee, total_amount, status,
+                event_start_date, event_end_date, celebration_type, celebration_title,
+                venue_location, start_time, end_time, attendees_count,
+                discount_percentage, discount_amount, is_multi_booking
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+        ''', (
+            user_id,                          # booker_id
+            p['booked_id'],                   # booked_id
+            p['booked_role'],                 # booked_role
+            daily_rate,                       # daily_rate
+            charging_fee,                     # charging_fee
+            final_total,                      # total_amount
+            event_start_date,                 # event_start_date
+            event_end_date,                   # event_end_date
+            celebration_type,                 # celebration_type
+            celebration_title,                # celebration_title
+            venue_location,                   # venue_location
+            start_time,                       # start_time
+            end_time,                         # end_time
+            int(attendees_count),             # attendees_count
+            effective_discount_percentage,    # discount_percentage
+            discount_amount,                  # discount_amount
+            1                                 # is_multi_booking
+        ))
+        booking_ids.append(cursor.lastrowid)
+
+        # Notify the booked provider
+        booked_username = ''
+        try:
+            main_conn = main_db.get_db()
+            main_cursor = main_conn.cursor()
+            main_cursor.execute('SELECT username FROM users WHERE id = ?', (p['booked_id'],))
+            booked_user = main_cursor.fetchone()
+            main_conn.close()
+            if booked_user:
+                booked_username = booked_user['username']
+        except Exception:
+            pass
+
+        # Build notification message with appropriate discount info
+        if is_five_booking and idx == 4:
+            noti_message = f'{booker_username} has requested to book you ({p["booked_role"].capitalize()}) for {celebration_title} as part of a full 5-role booking! You get a 10% + 5% bonus discount!'
+        else:
+            noti_message = f'{booker_username} has requested to book you ({p["booked_role"].capitalize()}) for {celebration_title} as part of a multi-provider booking. You get a 10% discount bundle!'
+
+        try:
+            noti_module.create_notification(
+                user_id=p['booked_id'],
+                title='New multi-booking request',
+                message=noti_message,
+                notification_type='booking_request',
+                related_item_id=booking_ids[-1],
+                priority='medium',
+                action_url=f'/bookings?tab=received&id={booking_ids[-1]}',
+                action_label='View Details'
+            )
+        except Exception:
+            pass
+
+    conn.commit()
+    conn.close()
+
+    # Notify the booker
+    if is_five_booking:
+        noti_msg = f'Your booking request for {celebration_title} has been sent to all 5 providers with a 10% discount + 5% bonus on the 5th! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
+    else:
+        noti_msg = f'Your booking request for {celebration_title} has been sent to {len(providers)} providers with a 10% discount! Original: KES {total_original:.0f}, You save: KES {total_discount:.0f}, Total: KES {total_final:.0f}'
+
+    try:
+        noti_module.create_notification(
+            user_id=user_id,
+            title='Multi-booking placed',
+            message=noti_msg,
+            notification_type='booking_request',
+            related_item_id=booking_ids[0],
+            priority='low',
+            action_url=f'/bookings?tab=my',
+            action_label='View Bookings'
+        )
+    except Exception:
+        pass
+
+    response_data = {
+        'success': True,
+        'booking_ids': booking_ids,
+        'total_original': total_original,
+        'discount_amount': total_discount,
+        'total_final': total_final,
+        'discount_percentage': base_discount_percentage
+    }
+    if is_five_booking:
+        response_data['message'] = f'Multi-booking request sent to all 5 providers with 10% + 5% bonus discount!'
+        response_data['fifth_booking_discount'] = fifth_booking_discount
+        response_data['is_five_booking'] = True
+    else:
+        response_data['message'] = f'Multi-booking request sent to {len(providers)} providers with 10% discount!'
+
+    return jsonify(response_data)
 
 
 @book_bp.route('/api/celebration-types', methods=['GET'])

@@ -21,10 +21,6 @@ templates/account/whatsapp_session.db
 static/uploads/*
 !static/uploads/.gitkeep
 
-# Logs
-logs/*
-!logs/.gitkeep
-
 # IDE
 .idea/
 .vscode/
@@ -34,9 +30,6 @@ logs/*
 # OS
 .DS_Store
 Thumbs.db
-
-# PyWhatKit
-PyWhatKit_DB.txt
 
 # Environment variables
 .env

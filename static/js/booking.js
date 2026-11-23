@@ -270,7 +270,28 @@ function openBookingModal(bookedId, bookedRole, dailyRate, username) {
     document.getElementById('modal-booked-id').value = bookedId;
     document.getElementById('modal-booked-role').value = bookedRole;
     document.getElementById('modal-daily-rate').value = dailyRate;
-    document.getElementById('modal-total-display').textContent = 'KES ' + Math.round(dailyRate * 1.8);
+
+    var originalTotal = dailyRate * 1.8;
+    document.getElementById('modal-total-display').textContent = 'KES ' + Math.round(originalTotal);
+
+    // Hide loyalty discount rows by default
+    document.getElementById('modal-fifth-loyalty').style.display = 'none';
+    document.getElementById('modal-final-row').style.display = 'none';
+
+    // Check if this booking qualifies for the 5th-booking loyalty discount
+    fetch('/api/book/loyalty-check')
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data.is_fifth_booking) {
+                var discountAmount = originalTotal * 0.05;
+                var finalTotal = originalTotal - discountAmount;
+                document.getElementById('modal-fifth-discount-amount').textContent = '-KES ' + Math.round(discountAmount);
+                document.getElementById('modal-final-display').textContent = 'KES ' + Math.round(finalTotal);
+                document.getElementById('modal-fifth-loyalty').style.display = 'flex';
+                document.getElementById('modal-final-row').style.display = 'flex';
+            }
+        })
+        .catch(function () { /* Silently ignore — discount rows stay hidden */ });
 
     // Load celebration types on first open
     loadCelebrationTypes();
@@ -386,7 +407,11 @@ function submitBooking(event) {
     .then(function (data) {
         if (data.success) {
             closeBookingModal();
-            showToast('Booking request sent successfully!', 'success');
+            if (data.is_fifth_booking) {
+                showToast('Booking sent! 5% loyalty discount applied — save KES ' + Math.round(data.discount_amount) + '!', 'success');
+            } else {
+                showToast('Booking request sent successfully!', 'success');
+            }
             setTimeout(function () {
                 location.reload();
             }, 1500);
@@ -680,6 +705,297 @@ function processPayout(bookingId) {
 }
 
 /* =========================
+   MULTI-BOOKING LOGIC
+========================= */
+
+var multiSelectedProviders = [];
+
+function updateMultiSelection() {
+    var checkboxes = document.querySelectorAll('.provider-checkbox:checked');
+    multiSelectedProviders = [];
+    var roles = [];
+
+    checkboxes.forEach(function (cb) {
+        multiSelectedProviders.push({
+            booked_id: parseInt(cb.dataset.id),
+            booked_role: cb.dataset.role,
+            daily_rate: parseFloat(cb.dataset.rate),
+            username: cb.dataset.username
+        });
+        roles.push(cb.dataset.role);
+    });
+
+    var bar = document.getElementById('multi-booking-bar');
+    var countEl = document.getElementById('multi-selected-count');
+    var totalEl = document.getElementById('multi-bar-total');
+    var saveEl = document.getElementById('multi-bar-save');
+    var discountBadge = document.getElementById('multi-discount-badge');
+
+    if (multiSelectedProviders.length >= 2) {
+        // Check for duplicate roles
+        var uniqueRoles = roles.filter(function (role, index) {
+            return roles.indexOf(role) === index;
+        });
+
+        if (uniqueRoles.length < roles.length) {
+            // Duplicate role found — uncheck the duplicate
+            var seen = {};
+            checkboxes.forEach(function (cb) {
+                if (seen[cb.dataset.role]) {
+                    cb.checked = false;
+                }
+                seen[cb.dataset.role] = true;
+            });
+            showToast('Cannot select the same role twice', 'error');
+            updateMultiSelection();
+            return;
+        }
+
+        bar.style.display = 'block';
+        countEl.textContent = multiSelectedProviders.length;
+
+        var originalTotal = 0;
+        multiSelectedProviders.forEach(function (p) {
+            originalTotal += p.daily_rate * 1.8;
+        });
+        var discount = originalTotal * 0.1;
+        var finalTotal = originalTotal - discount;
+
+        // Check if all 5 roles are selected — apply extra 5% bonus on the 5th booking
+        var isFiveBooking = multiSelectedProviders.length === 5;
+        if (isFiveBooking && discountBadge) {
+            discountBadge.innerHTML = '<i class="fas fa-tag"></i> 10% + 5% bonus on 5th!';
+            // Calculate the 5th provider's extra discount
+            var fifthProvider = multiSelectedProviders[4];
+            var fifthOriginal = fifthProvider.daily_rate * 1.8;
+            var fifthAfter10Percent = fifthOriginal * 0.9;
+            var fifthBonus = fifthAfter10Percent * 0.05;
+            discount += fifthBonus;
+            finalTotal -= fifthBonus;
+        } else if (discountBadge) {
+            discountBadge.innerHTML = '<i class="fas fa-tag"></i> 10% discount applied!';
+        }
+
+        totalEl.textContent = Math.round(finalTotal);
+        saveEl.textContent = Math.round(discount);
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function clearMultiSelection() {
+    document.querySelectorAll('.provider-checkbox').forEach(function (cb) {
+        cb.checked = false;
+    });
+    multiSelectedProviders = [];
+    document.getElementById('multi-booking-bar').style.display = 'none';
+}
+
+function openMultiBookingModal() {
+    if (multiSelectedProviders.length < 2) {
+        showToast('Select at least 2 providers', 'error');
+        return;
+    }
+
+    // Build selected providers list
+    var listEl = document.getElementById('multi-selected-list');
+    listEl.innerHTML = '';
+    var originalTotal = 0;
+    var isFiveBooking = multiSelectedProviders.length === 5;
+
+    multiSelectedProviders.forEach(function (p, index) {
+        var price = p.daily_rate * 1.8;
+        originalTotal += price;
+        var item = document.createElement('div');
+        item.className = 'multi-selected-item';
+        if (isFiveBooking && index === 4) {
+            item.className += ' fifth-booking-highlight';
+        }
+        var roleIcon = p.booked_role === 'dj' ? 'fa-music' :
+                       p.booked_role === 'event' ? 'fa-calendar-days' :
+                       p.booked_role === 'photographer' ? 'fa-camera' :
+                       p.booked_role === 'tent' ? 'fa-campground' : 'fa-utensils';
+        var fifthBadge = (isFiveBooking && index === 4) ? ' <span class="fifth-badge"><i class="fas fa-star"></i> +5% bonus</span>' : '';
+        item.innerHTML = '<i class="fas ' + roleIcon + '"></i> ' +
+                         '<span class="multi-item-name">' + p.username + '</span> ' +
+                         '<span class="multi-item-role">' + p.booked_role.charAt(0).toUpperCase() + p.booked_role.slice(1) + '</span>' + fifthBadge + ' ' +
+                         '<span class="multi-item-price">KES ' + Math.round(price) + '</span>';
+        listEl.appendChild(item);
+    });
+
+    var discount = originalTotal * 0.1;
+    var fifthBonus = 0;
+    if (isFiveBooking) {
+        var fifthProvider = multiSelectedProviders[4];
+        var fifthOriginal = fifthProvider.daily_rate * 1.8;
+        var fifthAfter10Percent = fifthOriginal * 0.9;
+        fifthBonus = fifthAfter10Percent * 0.05;
+    }
+    var totalDiscount = discount + fifthBonus;
+    var finalTotal = originalTotal - totalDiscount;
+
+    document.getElementById('multi-original-total').textContent = Math.round(originalTotal);
+    document.getElementById('multi-discount-amount').textContent = Math.round(totalDiscount);
+    document.getElementById('multi-final-total').textContent = Math.round(finalTotal);
+
+    // Update discount label based on whether 5th bonus applies
+    var discountLabel = document.getElementById('multi-discount-label');
+    var fifthBonusRow = document.getElementById('multi-fifth-bonus-row');
+    if (isFiveBooking) {
+        if (discountLabel) discountLabel.textContent = '10% Multi-Booking Discount';
+        if (fifthBonusRow) fifthBonusRow.style.display = 'flex';
+        document.getElementById('multi-fifth-bonus-amount').textContent = Math.round(fifthBonus);
+    } else {
+        if (discountLabel) discountLabel.textContent = '10% Discount';
+        if (fifthBonusRow) fifthBonusRow.style.display = 'none';
+    }
+
+    // Update discount banner text
+    var discountBanner = document.getElementById('multi-discount-banner-text');
+    if (discountBanner) {
+        if (isFiveBooking) {
+            discountBanner.innerHTML = '<strong>10% + 5% Bonus</strong> applied for booking all 5 roles!';
+        } else {
+            discountBanner.innerHTML = '<strong>10% Discount</strong> applied for booking multiple roles!';
+        }
+    }
+
+    // Load celebration types
+    loadMultiCelebrationTypes();
+
+    // Set minimum date to today
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('multi-event-start-date').setAttribute('min', today);
+    document.getElementById('multi-event-end-date').setAttribute('min', today);
+
+    document.getElementById('multi-booking-modal').style.display = 'flex';
+}
+
+function closeMultiBookingModal() {
+    document.getElementById('multi-booking-modal').style.display = 'none';
+    document.getElementById('multi-booking-form').reset();
+}
+
+var multiCelebrationTypesLoaded = false;
+
+function loadMultiCelebrationTypes() {
+    if (multiCelebrationTypesLoaded) return;
+
+    fetch('/api/celebration-types')
+    .then(function (response) {
+        return response.json();
+    })
+    .then(function (data) {
+        if (data.success) {
+            var select = document.getElementById('multi-celebration-type');
+            select.innerHTML = '<option value="">Select a celebration type</option>';
+            data.types.forEach(function (type) {
+                var option = document.createElement('option');
+                option.value = type.name;
+                option.textContent = type.name;
+                select.appendChild(option);
+            });
+            multiCelebrationTypesLoaded = true;
+        }
+    })
+    .catch(function (error) {
+        console.error('Failed to load celebration types:', error);
+    });
+}
+
+function submitMultiBooking(event) {
+    event.preventDefault();
+
+    var celebrationType = document.getElementById('multi-celebration-type').value;
+    var celebrationTitle = document.getElementById('multi-celebration-title').value.trim();
+    var venueLocation = document.getElementById('multi-venue-location').value.trim();
+    var eventStartDate = document.getElementById('multi-event-start-date').value;
+    var eventEndDate = document.getElementById('multi-event-end-date').value;
+    var startTime = document.getElementById('multi-start-time').value;
+    var endTime = document.getElementById('multi-end-time').value;
+    var attendeesCount = document.getElementById('multi-attendees-count').value;
+
+    // Validate
+    if (!celebrationType) {
+        showToast('Please select a celebration type', 'error');
+        return;
+    }
+    if (!celebrationTitle) {
+        showToast('Please enter a celebration title', 'error');
+        return;
+    }
+    if (!venueLocation) {
+        showToast('Please enter a venue location', 'error');
+        return;
+    }
+    if (!eventStartDate) {
+        showToast('Please select an event start date', 'error');
+        return;
+    }
+    if (!startTime || !endTime) {
+        showToast('Please select start and end times', 'error');
+        return;
+    }
+    if (endTime <= startTime) {
+        showToast('End time must be after start time', 'error');
+        return;
+    }
+    if (!attendeesCount || parseInt(attendeesCount) <= 0) {
+        showToast('Please enter the number of attendees', 'error');
+        return;
+    }
+    if (eventEndDate && eventEndDate < eventStartDate) {
+        showToast('Event end date must be after start date', 'error');
+        return;
+    }
+
+    fetch('/api/book/multi', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            providers: multiSelectedProviders,
+            event_start_date: eventStartDate,
+            event_end_date: eventEndDate || null,
+            celebration_type: celebrationType,
+            celebration_title: celebrationTitle,
+            venue_location: venueLocation,
+            start_time: startTime,
+            end_time: endTime,
+            attendees_count: parseInt(attendeesCount)
+        })
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                throw new Error(data.message || 'Multi-booking failed');
+            }
+            return data;
+        });
+    })
+    .then(function (data) {
+        if (data.success) {
+            closeMultiBookingModal();
+            clearMultiSelection();
+            if (data.is_five_booking) {
+                showToast('Multi-booking sent with 10% + 5% bonus discount! Save KES ' + Math.round(data.discount_amount), 'success');
+            } else {
+                showToast('Multi-booking sent with 10% discount! Save KES ' + Math.round(data.discount_amount), 'success');
+            }
+            setTimeout(function () {
+                location.reload();
+            }, 2000);
+        } else {
+            showToast(data.message || 'Multi-booking failed', 'error');
+        }
+    })
+    .catch(function (error) {
+        showToast(error.message || 'Something went wrong', 'error');
+    });
+}
+
+/* =========================
    CLOSE MODALS ON OVERLAY CLICK
 ========================= */
 
@@ -689,5 +1005,8 @@ document.addEventListener('click', function (e) {
     }
     if (e.target.id === 'reject-modal') {
         closeRejectModal();
+    }
+    if (e.target.id === 'multi-booking-modal') {
+        closeMultiBookingModal();
     }
 });

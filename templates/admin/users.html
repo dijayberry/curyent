@@ -1,0 +1,215 @@
+{% extends "admin/base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-description">Manage all registered users — edit details, change roles, or remove users.</p>
+</div>
+
+<div class="table-toolbar">
+    <form class="search-form" method="GET">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" value="{{ search }}" placeholder="Search users...">
+        </div>
+        <select name="role" class="filter-select">
+            <option value="">All Roles</option>
+            {% for r in roles %}
+            <option value="{{ r }}" {% if role == r %}selected{% endif %}>{{ r | capitalize }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+    <div class="pagination-info">
+        {{ users | length }} users found
+    </div>
+</div>
+
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if users %}
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    <div class="user-cell">
+                        {% if user.profile_image %}
+                        <img src="{{ user.profile_image }}" alt="{{ user.username }}" class="user-avatar-small">
+                        {% else %}
+                        <div class="user-avatar-small user-avatar-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                        <span>{{ user.username }}</span>
+                    </div>
+                </td>
+                <td>{{ user.email }}</td>
+                <td><span class="role-badge role-{{ user.role }}">{{ user.role | capitalize }}</span></td>
+                <td>{{ user.phone or '-' }}</td>
+                <td>{{ user.location or '-' }}</td>
+                <td>{{ user.created_at[:10] if user.created_at else '-' }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-info" onclick="editUser({{ user.id }})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }}, '{{ user.username }}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="empty-state">
+                    <i class="fas fa-users"></i>
+                    No users found
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal" id="editUserModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-edit"></i> Edit User</h3>
+            <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId" name="id">
+                <div class="form-group">
+                    <label for="editUsername">Username</label>
+                    <input type="text" id="editUsername" name="username">
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="editRole">Role</label>
+                    <select id="editRole" name="role">
+                        <option value="client">Client</option>
+                        <option value="dj">DJ</option>
+                        <option value="venue">Venue</option>
+                        <option value="photographer">Photographer</option>
+                        <option value="tents">Tents</option>
+                        <option value="caterer">Caterer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editTitle">Title</label>
+                    <input type="text" id="editTitle" name="title">
+                </div>
+                <div class="form-group">
+                    <label for="editPhone">Phone</label>
+                    <input type="text" id="editPhone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="editLocation">Location</label>
+                    <input type="text" id="editLocation" name="location">
+                </div>
+                <div class="form-group">
+                    <label for="editPassword">New Password (leave empty to keep)</label>
+                    <input type="password" id="editPassword" name="password" placeholder="New password">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveUser()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editUser(userId) {
+    fetch('/admin/api/users/' + userId)
+        .then(response => response.json())
+        .then(user => {
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUsername').value = user.username || '';
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editRole').value = user.role || 'client';
+            document.getElementById('editTitle').value = user.title || '';
+            document.getElementById('editPhone').value = user.phone || '';
+            document.getElementById('editLocation').value = user.location || '';
+            document.getElementById('editPassword').value = '';
+            openModal('editUserModal');
+        })
+        .catch(error => {
+            showToast('Error loading user: ' + error, 'error');
+        });
+}
+
+function saveUser() {
+    const userId = document.getElementById('editUserId').value;
+    const data = {
+        username: document.getElementById('editUsername').value,
+        email: document.getElementById('editEmail').value,
+        role: document.getElementById('editRole').value,
+        title: document.getElementById('editTitle').value,
+        phone: document.getElementById('editPhone').value,
+        location: document.getElementById('editLocation').value,
+        password: document.getElementById('editPassword').value || null
+    };
+
+    fetch('/admin/api/users/' + userId, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('User updated successfully', 'success');
+            closeModal('editUserModal');
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => {
+        showToast('Error saving user: ' + error, 'error');
+    });
+}
+
+function deleteUser(userId, username) {
+    if (confirm('Are you sure you want to delete user "' + username + '"? This will remove all their data including bookings, messages, and notifications.')) {
+        fetch('/admin/api/users/' + userId, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showToast('User deleted successfully', 'success');
+                setTimeout(() => location.reload(), 500);
+            }
+        })
+        .catch(error => {
+            showToast('Error deleting user: ' + error, 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

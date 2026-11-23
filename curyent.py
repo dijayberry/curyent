@@ -6,6 +6,7 @@ from templates.book import book_bp
 from templates.profile import profile_bp
 from templates.chat import chat_bp
 from templates.notifications import notifications_bp
+from templates.admin import admin_bp
 
 app = Flask(__name__)
 app.secret_key = 'curyent-secret-key'
@@ -14,6 +15,7 @@ app.register_blueprint(book_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(notifications_bp)
+app.register_blueprint(admin_bp)
 
 @app.route('/')
 def home():
@@ -33,7 +35,19 @@ def home():
             profile_image = row['profile_image'] or ''
             title = row['title'] or ''
         conn.close()
-    return render_template('home/home.html', logged_in=user_id is not None, username=username, location=location, profile_image=profile_image, title=title)
+
+    # Load UI config from admin.db for dynamic home page
+    import templates.admin.admin_db as admin_db
+    ui_config = {}
+    try:
+        all_configs = admin_db.get_all_configs()
+        for category, items in all_configs.items():
+            for item in items:
+                ui_config[item['key']] = item['value']
+    except Exception:
+        pass
+
+    return render_template('home/home.html', logged_in=user_id is not None, username=username, location=location, profile_image=profile_image, title=title, ui=ui_config)
 
 @app.route('/reset-databases')
 def reset_databases():
@@ -336,6 +350,9 @@ def init_all_databases():
 
     import templates.chat.chat as chat_module
     chat_module.init_db()
+
+    import templates.admin.admin_db as admin_db
+    admin_db.init_db()
 
 
 # Initialize databases at module level so Gunicorn can import and start the app

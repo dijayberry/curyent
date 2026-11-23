@@ -1,0 +1,192 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Booking Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-description">View and manage all bookings — change status, approval, and payout status.</p>
+</div>
+
+<div class="table-toolbar">
+    <form class="search-form" method="GET">
+        <select name="status" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="accepted" {% if status == 'accepted' %}selected{% endif %}>Accepted</option>
+            <option value="declined" {% if status == 'declined' %}selected{% endif %}>Declined</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        {% if status %}
+        <a href="/admin/bookings" class="btn btn-secondary">Clear Filter</a>
+        {% endif %}
+    </form>
+    <div class="pagination-info">
+        {{ bookings | length }} bookings found
+    </div>
+</div>
+
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Booker</th>
+                <th>Provider</th>
+                <th>Role</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Approval</th>
+                <th>Payout</th>
+                <th>Event Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if bookings %}
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking.id }}</td>
+                <td>
+                    <div class="user-cell">
+                        {% if booking.booker_image %}
+                        <img src="{{ booking.booker_image }}" alt="{{ booking.booker_username }}" class="user-avatar-small">
+                        {% else %}
+                        <div class="user-avatar-small user-avatar-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                        <span>{{ booking.booker_username or 'Unknown' }}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="user-cell">
+                        {% if booking.booked_image %}
+                        <img src="{{ booking.booked_image }}" alt="{{ booking.booked_username }}" class="user-avatar-small">
+                        {% else %}
+                        <div class="user-avatar-small user-avatar-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                        <span>{{ booking.booked_username or 'Unknown' }}</span>
+                    </div>
+                </td>
+                <td><span class="role-badge role-{{ booking.booked_role }}">{{ booking.booked_role | capitalize }}</span></td>
+                <td>KES {{ "%.0f"|format(booking.daily_rate) }}</td>
+                <td>
+                    <select class="status-select" onchange="updateBookingStatus({{ booking.id }}, 'status', this.value)">
+                        <option value="pending" {% if booking.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="accepted" {% if booking.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                        <option value="declined" {% if booking.status == 'declined' %}selected{% endif %}>Declined</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="status-select" onchange="updateBookingStatus({{ booking.id }}, 'approval_status', this.value)">
+                        <option value="not_requested" {% if booking.approval_status == 'not_requested' %}selected{% endif %}>Not Requested</option>
+                        <option value="requested" {% if booking.approval_status == 'requested' %}selected{% endif %}>Requested</option>
+                        <option value="approved" {% if booking.approval_status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if booking.approval_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="status-select" onchange="updateBookingStatus({{ booking.id }}, 'payout_status', this.value)">
+                        <option value="not_started" {% if booking.payout_status == 'not_started' %}selected{% endif %}>Not Started</option>
+                        <option value="scheduled_for_event" {% if booking.payout_status == 'scheduled_for_event' %}selected{% endif %}>Scheduled</option>
+                        <option value="paid" {% if booking.payout_status == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="pending_retry" {% if booking.payout_status == 'pending_retry' %}selected{% endif %}>Pending Retry</option>
+                        <option value="payout_failed" {% if booking.payout_status == 'payout_failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </td>
+                <td>
+                    {% if booking.event_start_date %}
+                    <div class="event-date">{{ booking.event_start_date[:10] }}</div>
+                    {% if booking.event_end_date %}
+                    <div class="event-date">{{ booking.event_end_date[:10] }}</div>
+                    {% endif %}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewBooking({{ booking.id }})" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="10" class="empty-state">
+                    <i class="fas fa-book"></i>
+                    No bookings found
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- View Booking Modal -->
+<div class="modal" id="viewBookingModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3><i class="fas fa-book"></i> Booking Details</h3>
+            <button class="modal-close" onclick="closeModal('viewBookingModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="bookingDetails">
+            <!-- Filled by JS -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('viewBookingModal')">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateBookingStatus(bookingId, field, value) {
+    fetch('/admin/api/bookings/' + bookingId, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({[field]: value})
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('Booking updated successfully', 'success');
+        }
+    })
+    .catch(error => {
+        showToast('Error updating booking: ' + error, 'error');
+    });
+}
+
+function viewBooking(bookingId) {
+    fetch('/admin/api/table/booking.db/bookings')
+        .then(response => response.json())
+        .then(data => {
+            const booking = data.rows.find(b => b.id === bookingId);
+            if (!booking) {
+                showToast('Booking not found', 'error');
+                return;
+            }
+
+            let html = '<div class="booking-details">';
+            for (const [key, value] of Object.entries(booking)) {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `<div class="detail-row">
+                    <strong>${label}:</strong>
+                    <span>${value || '-'}</span>
+                </div>`;
+            }
+            html += '</div>';
+
+            document.getElementById('bookingDetails').innerHTML = html;
+            openModal('viewBookingModal');
+        })
+        .catch(error => {
+            showToast('Error loading booking: ' + error, 'error');
+        });
+}
+</script>
+{% endblock %}
