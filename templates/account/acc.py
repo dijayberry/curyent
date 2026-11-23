@@ -7,33 +7,42 @@ account_bp = Blueprint('account', __name__)
 
 
 def normalize_phone(phone):
-    """Normalize phone number to +2547xxxxxxxx format by auto-adding +254 prefix if missing."""
+    """Normalize phone number to +2547xxxxxxxx or +2541xxxxxxxx format by auto-adding +254 prefix if missing."""
     if not phone:
         return None, 'Phone number is required'
     # Remove any spaces, dashes, or parentheses
     cleaned = re.sub(r'[\s\-\(\)]', '', phone)
-    # If it already starts with +254, validate the full format
+    # If it already starts with +254, validate the full format (accepts 7 or 1 prefix)
     if cleaned.startswith('+254'):
-        pattern = r'^\+2547\d{8}$'
+        pattern = r'^\+254[71]\d{8}$'
         if re.match(pattern, cleaned):
             return cleaned, 'Valid'
-        return None, 'Phone number must be in format +2547xxxxxxxx (e.g., +254712345678)'
+        return None, 'Phone number must be in format +2547xxxxxxxx or +2541xxxxxxxx (e.g., +254712345678)'
     # If it starts with 07, replace with +2547
     if cleaned.startswith('07'):
+        cleaned = '+254' + cleaned[1:]
+    # If it starts with 01, replace with +2541
+    elif cleaned.startswith('01'):
         cleaned = '+254' + cleaned[1:]
     # If it starts with 7 followed by 8 digits, prepend +254
     elif cleaned.startswith('7') and len(cleaned) == 9:
         cleaned = '+254' + cleaned
+    # If it starts with 1 followed by 8 digits, prepend +254
+    elif cleaned.startswith('1') and len(cleaned) == 9:
+        cleaned = '+254' + cleaned
     # If it's 10 digits starting with 7, prepend +254
     elif len(cleaned) == 10 and cleaned[0] == '7':
         cleaned = '+254' + cleaned
+    # If it's 10 digits starting with 1, prepend +254
+    elif len(cleaned) == 10 and cleaned[0] == '1':
+        cleaned = '+254' + cleaned
     else:
-        return None, 'Phone number must start with 7 (e.g., 712345678)'
+        return None, 'Phone number must start with 7 or 1 (e.g., 712345678 or 112345678)'
     # Final validation
-    pattern = r'^\+2547\d{8}$'
+    pattern = r'^\+254[71]\d{8}$'
     if re.match(pattern, cleaned):
         return cleaned, 'Valid'
-    return None, 'Phone number must be in format +2547xxxxxxxx (e.g., +254712345678)'
+    return None, 'Phone number must be in format +2547xxxxxxxx or +2541xxxxxxxx (e.g., +254712345678)'
 
 # Database initialization moved to app startup (curyent.py) to avoid import-time locks
 # Call db.init_db() once at startup instead of on import

@@ -134,12 +134,12 @@ function initProfileEdit() {
                 }
             }
 
-            // Validate phone format (should start with +254)
+            // Validate phone format (should start with +254, accept 7 or 1 prefix)
             var phoneInput = document.getElementById('phone');
             if (phoneInput && phoneInput.value) {
-                var phoneRegex = /^\+2547\d{8}$/;
+                var phoneRegex = /^\+254[71]\d{8}$/;
                 if (!phoneRegex.test(phoneInput.value)) {
-                    showToast('Phone number must be in format +2547xxxxxxxx');
+                    showToast('Phone number must be in format +2547xxxxxxxx or +2541xxxxxxxx');
                     phoneInput.focus();
                     return;
                 }
