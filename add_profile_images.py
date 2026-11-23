@@ -1,6 +1,7 @@
 """
-Script to add realistic profile images for all users based on their roles.
-Uses pravatar.cc for realistic human faces with role-specific styling.
+Script to add profile images for all users based on their roles.
+- Clients get realistic human faces from pravatar.cc.
+- Providers (DJ, photographer, venue, tent, caterer) get role-specific action images from Unsplash.
 Also ensures 'event' role users have venue_profiles and 'tents' role users have tent_profiles.
 """
 import sqlite3
@@ -13,273 +14,238 @@ booking_db = os.path.join(base_dir, 'booking.db')
 probase_db = os.path.join(base_dir, 'probase.db')
 social_db = os.path.join(base_dir, 'social.db')
 
-# Realistic avatar URLs curated by role
-# Using pravatar.cc for realistic human faces with unique seeds per username
-role_avatar_sets = {
-    'client': {
-        'male': [
-            "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=3",
-            "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=12",
-            "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=17",
-            "https://i.pravatar.cc/300?img=24", "https://i.pravatar.cc/300?img=32",
-            "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
-            "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
-            "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
-            "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
-            "https://i.pravatar.cc/300?img=41", "https://i.pravatar.cc/300?img=42",
-            "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=9",
-            "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=20",
-            "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
-            "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=30",
-            "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=45",
-            "https://i.pravatar.cc/300?img=46", "https://i.pravatar.cc/300?img=47",
-            "https://i.pravatar.cc/300?img=48", "https://i.pravatar.cc/300?img=49",
-            "https://i.pravatar.cc/300?img=50", "https://i.pravatar.cc/300?img=45",
-            "https://i.pravatar.cc/300?img=46", "https://i.pravatar.cc/300?img=47",
-            "https://i.pravatar.cc/300?img=48", "https://i.pravatar.cc/300?img=49",
-        ]
-    },
-    'dj': {
-        'male': [
-            "https://i.pravatar.cc/300?img=11", "https://i.pravatar.cc/300?img=13",
-            "https://i.pravatar.cc/300?img=15", "https://i.pravatar.cc/300?img=51",
-            "https://i.pravatar.cc/300?img=52", "https://i.pravatar.cc/300?img=53",
-            "https://i.pravatar.cc/300?img=54", "https://i.pravatar.cc/300?img=55",
-            "https://i.pravatar.cc/300?img=56", "https://i.pravatar.cc/300?img=57",
-            "https://i.pravatar.cc/300?img=58", "https://i.pravatar.cc/300?img=59",
-            "https://i.pravatar.cc/300?img=60", "https://i.pravatar.cc/300?img=61",
-            "https://i.pravatar.cc/300?img=62", "https://i.pravatar.cc/300?img=63",
-            "https://i.pravatar.cc/300?img=64", "https://i.pravatar.cc/300?img=65",
-            "https://i.pravatar.cc/300?img=66", "https://i.pravatar.cc/300?img=67",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
-            "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=2",
-            "https://i.pravatar.cc/300?img=3", "https://i.pravatar.cc/300?img=4",
-            "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=6",
-            "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=8",
-            "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=10",
-            "https://i.pravatar.cc/300?img=11", "https://i.pravatar.cc/300?img=12",
-            "https://i.pravatar.cc/300?img=13", "https://i.pravatar.cc/300?img=14",
-            "https://i.pravatar.cc/300?img=15", "https://i.pravatar.cc/300?img=16",
-            "https://i.pravatar.cc/300?img=17", "https://i.pravatar.cc/300?img=18",
-        ]
-    },
-    'photographer': {
-        'male': [
-            "https://i.pravatar.cc/300?img=19", "https://i.pravatar.cc/300?img=21",
-            "https://i.pravatar.cc/300?img=22", "https://i.pravatar.cc/300?img=23",
-            "https://i.pravatar.cc/300?img=28", "https://i.pravatar.cc/300?img=29",
-            "https://i.pravatar.cc/300?img=32", "https://i.pravatar.cc/300?img=33",
-            "https://i.pravatar.cc/300?img=34", "https://i.pravatar.cc/300?img=35",
-            "https://i.pravatar.cc/300?img=36", "https://i.pravatar.cc/300?img=37",
-            "https://i.pravatar.cc/300?img=38", "https://i.pravatar.cc/300?img=39",
-            "https://i.pravatar.cc/300?img=40", "https://i.pravatar.cc/300?img=41",
-            "https://i.pravatar.cc/300?img=42", "https://i.pravatar.cc/300?img=43",
-            "https://i.pravatar.cc/300?img=44", "https://i.pravatar.cc/300?img=1",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=2", "https://i.pravatar.cc/300?img=3",
-            "https://i.pravatar.cc/300?img=4", "https://i.pravatar.cc/300?img=5",
-            "https://i.pravatar.cc/300?img=6", "https://i.pravatar.cc/300?img=7",
-            "https://i.pravatar.cc/300?img=8", "https://i.pravatar.cc/300?img=9",
-            "https://i.pravatar.cc/300?img=10", "https://i.pravatar.cc/300?img=11",
-            "https://i.pravatar.cc/300?img=12", "https://i.pravatar.cc/300?img=13",
-            "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=15",
-            "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=17",
-            "https://i.pravatar.cc/300?img=18", "https://i.pravatar.cc/300?img=19",
-            "https://i.pravatar.cc/300?img=20", "https://i.pravatar.cc/300?img=21",
-        ]
-    },
-    'venue': {
-        'male': [
-            "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=2",
-            "https://i.pravatar.cc/300?img=3", "https://i.pravatar.cc/300?img=4",
-            "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=6",
-            "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=8",
-            "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=10",
-            "https://i.pravatar.cc/300?img=11", "https://i.pravatar.cc/300?img=12",
-            "https://i.pravatar.cc/300?img=13", "https://i.pravatar.cc/300?img=14",
-            "https://i.pravatar.cc/300?img=15", "https://i.pravatar.cc/300?img=16",
-            "https://i.pravatar.cc/300?img=17", "https://i.pravatar.cc/300?img=18",
-            "https://i.pravatar.cc/300?img=19", "https://i.pravatar.cc/300?img=20",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=21", "https://i.pravatar.cc/300?img=22",
-            "https://i.pravatar.cc/300?img=23", "https://i.pravatar.cc/300?img=24",
-            "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
-            "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=28",
-            "https://i.pravatar.cc/300?img=29", "https://i.pravatar.cc/300?img=30",
-            "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=32",
-            "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
-            "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
-            "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
-            "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
-        ]
-    },
-    'event': {
-        'male': [
-            "https://i.pravatar.cc/300?img=41", "https://i.pravatar.cc/300?img=42",
-            "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
-            "https://i.pravatar.cc/300?img=45", "https://i.pravatar.cc/300?img=46",
-            "https://i.pravatar.cc/300?img=47", "https://i.pravatar.cc/300?img=48",
-            "https://i.pravatar.cc/300?img=49", "https://i.pravatar.cc/300?img=50",
-            "https://i.pravatar.cc/300?img=51", "https://i.pravatar.cc/300?img=52",
-            "https://i.pravatar.cc/300?img=53", "https://i.pravatar.cc/300?img=54",
-            "https://i.pravatar.cc/300?img=55", "https://i.pravatar.cc/300?img=56",
-            "https://i.pravatar.cc/300?img=57", "https://i.pravatar.cc/300?img=58",
-            "https://i.pravatar.cc/300?img=59", "https://i.pravatar.cc/300?img=60",
-            "https://i.pravatar.cc/300?img=61", "https://i.pravatar.cc/300?img=62",
-            "https://i.pravatar.cc/300?img=63", "https://i.pravatar.cc/300?img=64",
-            "https://i.pravatar.cc/300?img=65", "https://i.pravatar.cc/300?img=66",
-            "https://i.pravatar.cc/300?img=67", "https://i.pravatar.cc/300?img=1",
-            "https://i.pravatar.cc/300?img=2", "https://i.pravatar.cc/300?img=3",
-            "https://i.pravatar.cc/300?img=4", "https://i.pravatar.cc/300?img=5",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=6", "https://i.pravatar.cc/300?img=7",
-            "https://i.pravatar.cc/300?img=8", "https://i.pravatar.cc/300?img=9",
-            "https://i.pravatar.cc/300?img=10", "https://i.pravatar.cc/300?img=11",
-            "https://i.pravatar.cc/300?img=12", "https://i.pravatar.cc/300?img=13",
-            "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=15",
-            "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=17",
-            "https://i.pravatar.cc/300?img=18", "https://i.pravatar.cc/300?img=19",
-            "https://i.pravatar.cc/300?img=20", "https://i.pravatar.cc/300?img=21",
-            "https://i.pravatar.cc/300?img=22", "https://i.pravatar.cc/300?img=23",
-            "https://i.pravatar.cc/300?img=24", "https://i.pravatar.cc/300?img=25",
-            "https://i.pravatar.cc/300?img=26", "https://i.pravatar.cc/300?img=27",
-            "https://i.pravatar.cc/300?img=28", "https://i.pravatar.cc/300?img=29",
-            "https://i.pravatar.cc/300?img=30", "https://i.pravatar.cc/300?img=31",
-            "https://i.pravatar.cc/300?img=32", "https://i.pravatar.cc/300?img=33",
-            "https://i.pravatar.cc/300?img=34", "https://i.pravatar.cc/300?img=35",
-            "https://i.pravatar.cc/300?img=36", "https://i.pravatar.cc/300?img=37",
-        ]
-    },
-    'tent': {
-        'male': [
-            "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=2",
-            "https://i.pravatar.cc/300?img=3", "https://i.pravatar.cc/300?img=4",
-            "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=6",
-            "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=8",
-            "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=10",
-            "https://i.pravatar.cc/300?img=11", "https://i.pravatar.cc/300?img=12",
-            "https://i.pravatar.cc/300?img=13", "https://i.pravatar.cc/300?img=14",
-            "https://i.pravatar.cc/300?img=15", "https://i.pravatar.cc/300?img=16",
-            "https://i.pravatar.cc/300?img=17", "https://i.pravatar.cc/300?img=18",
-            "https://i.pravatar.cc/300?img=19", "https://i.pravatar.cc/300?img=20",
-            "https://i.pravatar.cc/300?img=21", "https://i.pravatar.cc/300?img=22",
-            "https://i.pravatar.cc/300?img=23", "https://i.pravatar.cc/300?img=24",
-            "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
-            "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=28",
-            "https://i.pravatar.cc/300?img=29", "https://i.pravatar.cc/300?img=30",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=32",
-            "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
-            "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
-            "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
-            "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
-            "https://i.pravatar.cc/300?img=41", "https://i.pravatar.cc/300?img=42",
-            "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
-            "https://i.pravatar.cc/300?img=45", "https://i.pravatar.cc/300?img=46",
-            "https://i.pravatar.cc/300?img=47", "https://i.pravatar.cc/300?img=48",
-            "https://i.pravatar.cc/300?img=49", "https://i.pravatar.cc/300?img=50",
-            "https://i.pravatar.cc/300?img=51", "https://i.pravatar.cc/300?img=52",
-            "https://i.pravatar.cc/300?img=53", "https://i.pravatar.cc/300?img=54",
-            "https://i.pravatar.cc/300?img=55", "https://i.pravatar.cc/300?img=56",
-            "https://i.pravatar.cc/300?img=57", "https://i.pravatar.cc/300?img=58",
-            "https://i.pravatar.cc/300?img=59", "https://i.pravatar.cc/300?img=60",
-            "https://i.pravatar.cc/300?img=61", "https://i.pravatar.cc/300?img=62",
-        ]
-    },
-    'tents': {
-        'male': [
-            "https://i.pravatar.cc/300?img=63", "https://i.pravatar.cc/300?img=64",
-            "https://i.pravatar.cc/300?img=65", "https://i.pravatar.cc/300?img=66",
-            "https://i.pravatar.cc/300?img=67", "https://i.pravatar.cc/300?img=1",
-            "https://i.pravatar.cc/300?img=2", "https://i.pravatar.cc/300?img=3",
-            "https://i.pravatar.cc/300?img=4", "https://i.pravatar.cc/300?img=5",
-            "https://i.pravatar.cc/300?img=6", "https://i.pravatar.cc/300?img=7",
-            "https://i.pravatar.cc/300?img=8", "https://i.pravatar.cc/300?img=9",
-            "https://i.pravatar.cc/300?img=10", "https://i.pravatar.cc/300?img=11",
-            "https://i.pravatar.cc/300?img=12", "https://i.pravatar.cc/300?img=13",
-            "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=15",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=17",
-            "https://i.pravatar.cc/300?img=18", "https://i.pravatar.cc/300?img=19",
-            "https://i.pravatar.cc/300?img=20", "https://i.pravatar.cc/300?img=21",
-            "https://i.pravatar.cc/300?img=22", "https://i.pravatar.cc/300?img=23",
-            "https://i.pravatar.cc/300?img=24", "https://i.pravatar.cc/300?img=25",
-            "https://i.pravatar.cc/300?img=26", "https://i.pravatar.cc/300?img=27",
-            "https://i.pravatar.cc/300?img=28", "https://i.pravatar.cc/300?img=29",
-            "https://i.pravatar.cc/300?img=30", "https://i.pravatar.cc/300?img=31",
-            "https://i.pravatar.cc/300?img=32", "https://i.pravatar.cc/300?img=33",
-            "https://i.pravatar.cc/300?img=34", "https://i.pravatar.cc/300?img=35",
-        ]
-    },
-    'caterer': {
-        'male': [
-            "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=2",
-            "https://i.pravatar.cc/300?img=3", "https://i.pravatar.cc/300?img=4",
-            "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=6",
-            "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=8",
-            "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=10",
-            "https://i.pravatar.cc/300?img=11", "https://i.pravatar.cc/300?img=12",
-            "https://i.pravatar.cc/300?img=13", "https://i.pravatar.cc/300?img=14",
-            "https://i.pravatar.cc/300?img=15", "https://i.pravatar.cc/300?img=16",
-            "https://i.pravatar.cc/300?img=17", "https://i.pravatar.cc/300?img=18",
-            "https://i.pravatar.cc/300?img=19", "https://i.pravatar.cc/300?img=20",
-        ],
-        'female': [
-            "https://i.pravatar.cc/300?img=21", "https://i.pravatar.cc/300?img=22",
-            "https://i.pravatar.cc/300?img=23", "https://i.pravatar.cc/300?img=24",
-            "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
-            "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=28",
-            "https://i.pravatar.cc/300?img=29", "https://i.pravatar.cc/300?img=30",
-            "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=32",
-            "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
-            "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
-            "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
-            "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
-        ]
-    }
+# Role-specific action images from Unsplash (providers only)
+# Each role has multiple images so users get variety
+role_action_images = {
+    'dj': [
+        "https://images.unsplash.com/photo-1571266028243-e4733b0f0106?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1598387993441-a364f8d47234?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508700115892-45e0e00a53b6?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1504715473946-3bd7274476c9?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1524368533920-cc17799e12ec?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1496843916299-590492c751f4?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1545128485-c400e77927df?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508169351866-777fc3667ff7?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478147427282-58a87a120781?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508854710579-5cecc3a9ff17?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519834785119-18e164bb8a+b5?w=300&h=300&fit=crop",
+    ],
+    'photographer': [
+        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1552168324-d612d77725e3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1502923966303-7a91a18d7bd2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1502923456291-f6bb55f6e986?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1495705956749-36f665796611?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1502923966303-7a91a18d7bd2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1552168324-d612d77725e3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
+    ],
+    'venue': [
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+    ],
+    'event': [
+        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+    ],
+    'tent': [
+        "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508615070457-9baa7fa41af3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508615070457-9baa7fa41af3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+    ],
+    'tents': [
+        "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508615070457-9baa7fa41af3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1508615070457-9baa7fa41af3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
+    ],
+    'caterer': [
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1466637514886-0e91e5f0c03b?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1466637514886-0e91e5f0c03b?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1466637514886-0e91e5f0c03b?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=300&fit=crop",
+    ],
 }
+
+# Client avatars - realistic human faces from pravatar.cc
+client_avatars = {
+    'male': [
+        "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=3",
+        "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=12",
+        "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=17",
+        "https://i.pravatar.cc/300?img=24", "https://i.pravatar.cc/300?img=32",
+        "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
+        "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
+        "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
+        "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
+        "https://i.pravatar.cc/300?img=41", "https://i.pravatar.cc/300?img=42",
+        "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
+    ],
+    'female': [
+        "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=9",
+        "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=20",
+        "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
+        "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=30",
+        "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=45",
+        "https://i.pravatar.cc/300?img=46", "https://i.pravatar.cc/300?img=47",
+        "https://i.pravatar.cc/300?img=48", "https://i.pravatar.cc/300?img=49",
+        "https://i.pravatar.cc/300?img=50", "https://i.pravatar.cc/300?img=5",
+        "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=16",
+        "https://i.pravatar.cc/300?img=20", "https://i.pravatar.cc/300?img=25",
+    ]
+}
+
 
 def get_deterministic_seed(username):
     """Generate a deterministic numeric seed from a username."""
     return int(hashlib.md5(username.encode()).hexdigest()[:8], 16)
 
+
 def get_gender_from_seed(seed):
     """Determine gender from seed (even = male, odd = female)."""
     return 'male' if seed % 2 == 0 else 'female'
 
+
 def get_avatar_url(username, role):
-    """Generate a realistic avatar URL based on username and role."""
-    # Normalize role
+    """Generate a profile image URL based on username and role.
+    
+    - Clients get realistic human faces from pravatar.cc.
+    - Providers get role-specific action images from Unsplash.
+    """
+    seed = get_deterministic_seed(username)
+    
+    # Clients get human faces
+    if role == 'client':
+        gender = get_gender_from_seed(seed)
+        avatars = client_avatars.get(gender, client_avatars['male'])
+        index = seed % len(avatars)
+        return avatars[index]
+    
+    # Providers get role-specific action images
+    # Normalize role for lookup
     if role in ('venue', 'event'):
-        role_key = 'venue' if role == 'venue' else 'event'
+        role_key = role
     elif role in ('tent', 'tents'):
         role_key = role
     else:
         role_key = role
-
-    # Get avatar set for this role
-    avatar_set = role_avatar_sets.get(role_key, role_avatar_sets['client'])
-
-    # Generate deterministic seed from username
-    seed = get_deterministic_seed(username)
-    gender = get_gender_from_seed(seed)
-
-    # Get the list of avatars for this gender
-    avatars = avatar_set.get(gender, avatar_set['male'])
-
-    # Use seed to pick a consistent avatar from the list
-    index = seed % len(avatars)
-    return avatars[index]
+    
+    images = role_action_images.get(role_key, role_action_images.get('dj', []))
+    if not images:
+        # Fallback to client avatars
+        gender = get_gender_from_seed(seed)
+        avatars = client_avatars.get(gender, client_avatars['male'])
+        index = seed % len(avatars)
+        return avatars[index]
+    
+    index = seed % len(images)
+    return images[index]
 
 
 def add_profile_images_to_db(db_path, db_name):
