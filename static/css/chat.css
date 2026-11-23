@@ -799,7 +799,7 @@ body {
 ========================= */
 
 .chat-new-chat-btn {
-    position: absolute;
+    position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
@@ -815,7 +815,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(74, 45, 122, 0.7);
-    z-index: 100;
+    z-index: 9999;
 }
 
 .chat-new-chat-btn:hover {
