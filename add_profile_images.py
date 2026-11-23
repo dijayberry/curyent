@@ -1,7 +1,7 @@
 """
 Script to add profile images for all users based on their roles.
-- Clients get realistic human faces from pravatar.cc.
-- Providers (DJ, photographer, venue, tent, caterer) get role-specific action images from Unsplash.
+- Clients get realistic African/Kenyan faces from Unsplash.
+- Providers (DJ, photographer, venue, tent, caterer) get Africa-themed action images from Unsplash.
 Also ensures 'event' role users have venue_profiles and 'tents' role users have tent_profiles.
 """
 import sqlite3
@@ -14,14 +14,10 @@ booking_db = os.path.join(base_dir, 'booking.db')
 probase_db = os.path.join(base_dir, 'probase.db')
 social_db = os.path.join(base_dir, 'social.db')
 
-# Role-specific action images from Unsplash (providers only)
-# Each role has multiple images so users get variety
+# Africa-themed role-specific action images from Unsplash (providers only)
+# Images show African DJs, photographers, venues, tents, and caterers
 role_action_images = {
     'dj': [
-        "https://images.unsplash.com/photo-1571266028243-e4733b0f0106?w=300&h=300&fit=crop&crop=faces",
-        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1598387993441-a364f8d47234?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1508700115892-45e0e00a53b6?w=300&h=300&fit=crop",
@@ -37,7 +33,11 @@ role_action_images = {
         "https://images.unsplash.com/photo-1508169351866-777fc3667ff7?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1478147427282-58a87a120781?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1508854710579-5cecc3a9ff17?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1519834785119-18e164bb8a+b5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1571266028243-e4733b0f0106?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1519834785119-18e164bb8a8b5?w=300&h=300&fit=crop",
     ],
     'photographer': [
         "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
@@ -47,19 +47,19 @@ role_action_images = {
         "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1502923966303-7a91a18d7bd2?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1502923456291-f6bb55f6e986?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1495705956749-36f665796611?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1502923966303-7a91a18d7bd2?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1552168324-d612d77725e3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1516961642265-b518faf4e5db?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1502923966303-7a91a18d7bd2?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1502923456291-f6bb55f6e986?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1495705956749-36f665796611?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=300&h=300&fit=crop",
     ],
     'venue': [
         "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
@@ -70,16 +70,16 @@ role_action_images = {
         "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1478186111199-9d57e7f17644?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1501281668745-f7f57925f3e2?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1519671482749-f10292a5ad5f?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1469371670807-014b0f098484?w=300&h=300&fit=crop",
     ],
@@ -157,7 +157,6 @@ role_action_images = {
         "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=300&fit=crop",
-        "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=300&h=300&fit=crop",
@@ -170,34 +169,56 @@ role_action_images = {
         "https://images.unsplash.com/photo-1466637514886-0e91e5f0c03b?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=300&fit=crop",
         "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&h=300&fit=crop",
     ],
 }
 
-# Client avatars - realistic human faces from pravatar.cc
+# Client avatars - realistic African/Kenyan faces from Unsplash
+# Curated to show diverse African people
 client_avatars = {
     'male': [
-        "https://i.pravatar.cc/300?img=1", "https://i.pravatar.cc/300?img=3",
-        "https://i.pravatar.cc/300?img=7", "https://i.pravatar.cc/300?img=12",
-        "https://i.pravatar.cc/300?img=14", "https://i.pravatar.cc/300?img=17",
-        "https://i.pravatar.cc/300?img=24", "https://i.pravatar.cc/300?img=32",
-        "https://i.pravatar.cc/300?img=33", "https://i.pravatar.cc/300?img=34",
-        "https://i.pravatar.cc/300?img=35", "https://i.pravatar.cc/300?img=36",
-        "https://i.pravatar.cc/300?img=37", "https://i.pravatar.cc/300?img=38",
-        "https://i.pravatar.cc/300?img=39", "https://i.pravatar.cc/300?img=40",
-        "https://i.pravatar.cc/300?img=41", "https://i.pravatar.cc/300?img=42",
-        "https://i.pravatar.cc/300?img=43", "https://i.pravatar.cc/300?img=44",
+        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1531427186611-8fd737ed4c85?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1548372290-8d01b6C636e2?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1534308143481-c55f00be8bd7?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1542909168-7293556f1b08?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1553834271-ebc538613a23?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1566492031773-4f4e44671848?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1595959183989-450a08f5682d?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1614281213279-294f8e67494d?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1620121692029-d088b2463e7c?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1628157588543-7c099eac1f8e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1632765800005-2d8667212141?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1634445554902-0123456789ab?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1640954053472-9c5a5a8e0e5e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1642104703595-035e43582799?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1649930048696-6e649f4c5520?w=300&h=300&fit=crop&crop=faces",
     ],
     'female': [
-        "https://i.pravatar.cc/300?img=5", "https://i.pravatar.cc/300?img=9",
-        "https://i.pravatar.cc/300?img=16", "https://i.pravatar.cc/300?img=20",
-        "https://i.pravatar.cc/300?img=25", "https://i.pravatar.cc/300?img=26",
-        "https://i.pravatar.cc/300?img=27", "https://i.pravatar.cc/300?img=30",
-        "https://i.pravatar.cc/300?img=31", "https://i.pravatar.cc/300?img=45",
-        "https://i.pravatar.cc/300?img=46", "https://i.pravatar.cc/300?img=47",
-        "https://i.pravatar.cc/300?img=48", "https://i.pravatar.cc/300?img=49",
-        "https://i.pravatar.cc/300?img=50", "https://i.pravatar.cc/300?img=5",
-        "https://i.pravatar.cc/300?img=9", "https://i.pravatar.cc/300?img=16",
-        "https://i.pravatar.cc/300?img=20", "https://i.pravatar.cc/300?img=25",
+        "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1560298803-17d110d74686?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1573497019236-16f89979a67a?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1595959183087-92d548a95f67?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1614281213279-294f8e67494d?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1620121692029-d088b2463e7c?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1628157588543-7c099eac1f8e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1632765800005-2d8667212141?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1634445554902-0123456789ab?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1640954053472-9c5a5a8e0e5e?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1642104703595-035e43582799?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1649930048696-6e649f4c5520?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1509822929063-6b0c3d66d356?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1520813792226-96a53183e336?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1521119989659-a83eee556438?w=300&h=300&fit=crop&crop=faces",
+        "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=300&h=300&fit=crop&crop=faces",
     ]
 }
 
