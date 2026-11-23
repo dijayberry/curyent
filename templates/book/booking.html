@@ -235,39 +235,54 @@
                             <i class="fas fa-users"></i> {{ booking['attendees_count'] }} attendees
                         </div>
                         {% endif %}
-                        <!-- Approval & Payout Status -->
-                        {% if booking['status'] == 'accepted' %}
+                        <!-- Booking Status for Booker -->
+                        {% if booking['status'] == 'accepted' and booking['approval_status'] not in ('approved', 'rejected') %}
                         <div class="booking-approval-status">
-                            {% if booking['approval_status'] == 'not_requested' %}
-                                <span class="approval-badge approval-not-requested">
-                                    <i class="fas fa-hourglass-start"></i> Waiting to request approval
+                            <span class="approval-badge approval-pending">
+                                <i class="fas fa-clock"></i> Awaiting {{ booking['booked_username'] }} acceptance
+                            </span>
+                        </div>
+                        {% elif booking['status'] == 'paid' %}
+                        <div class="booking-approval-status">
+                            <span class="approval-badge approval-paid">
+                                <i class="fas fa-credit-card"></i> Payment completed
+                            </span>
+                            {% if booking['approval_status'] == 'waiting_for_event' %}
+                                <span class="approval-badge approval-waiting-event">
+                                    <i class="fas fa-calendar-check"></i> Waiting for event day
                                 </span>
-                                <button class="approval-action-btn request-approval-btn" onclick="requestApproval({{ booking['id'] }})">
-                                    <i class="fas fa-paper-plane"></i> Request Service Approval
-                                </button>
-                            {% elif booking['approval_status'] == 'requested' %}
-                                <span class="approval-badge approval-requested">
-                                    <i class="fas fa-hourglass-half"></i> Approval requested — waiting for response
-                                </span>
+                            {% elif booking['approval_status'] == 'delivery_check_sent' %}
+                                <div class="delivery-check-section" id="delivery-check-{{ booking['id'] }}">
+                                    <div class="delivery-check-prompt">
+                                        <i class="fas fa-question-circle"></i>
+                                        <strong>Did {{ booking['booked_username'] }} deliver the service for this booking?</strong>
+                                        <p>The provider ({{ booking['booked_username'] }}) has been paid. Please confirm whether they delivered the service.</p>
+                                    </div>
+                                    <div class="delivery-check-actions">
+                                        <button class="confirm-delivery-btn" onclick="confirmDelivery({{ booking['id'] }}, true)">
+                                            <i class="fas fa-check"></i> Yes, Service Delivered
+                                        </button>
+                                        <button class="reject-delivery-btn" onclick="openRejectDeliveryModal({{ booking['id'] }})">
+                                            <i class="fas fa-times"></i> No, Not Delivered
+                                        </button>
+                                    </div>
+                                </div>
                             {% elif booking['approval_status'] == 'approved' %}
                                 <span class="approval-badge approval-approved">
-                                    <i class="fas fa-check-circle"></i> Service approved
+                                    <i class="fas fa-check-circle"></i> Service confirmed — payout scheduled
                                 </span>
-                                {% if booking['payout_status'] == 'waiting_payout' %}
+                                {% if booking['payout_status'] == 'scheduled_for_event' %}
                                     <span class="payout-badge payout-waiting">
-                                        <i class="fas fa-clock"></i> Payout processing (30-60 min)
+                                        <i class="fas fa-clock"></i> Payout will be processed 2 hours before event end
                                     </span>
-                                    <button class="approval-action-btn process-payout-btn" onclick="processPayout({{ booking['id'] }})">
-                                        <i class="fas fa-money-bill-wave"></i> Process Payout Now
-                                    </button>
                                 {% elif booking['payout_status'] == 'paid' %}
                                     <span class="payout-badge payout-paid">
-                                        <i class="fas fa-check-circle"></i> Payout completed
+                                        <i class="fas fa-check-circle"></i> Payout of KES {{ booking['daily_rate'] | int }} completed
                                     </span>
                                 {% endif %}
                             {% elif booking['approval_status'] == 'rejected' %}
                                 <span class="approval-badge approval-rejected">
-                                    <i class="fas fa-times-circle"></i> Service rejected
+                                    <i class="fas fa-times-circle"></i> Service not confirmed
                                 </span>
                                 {% if booking['rejection_reason'] %}
                                     <div class="rejection-reason">
@@ -275,6 +290,12 @@
                                     </div>
                                 {% endif %}
                             {% endif %}
+                        </div>
+                        {% elif booking['status'] == 'declined' %}
+                        <div class="booking-approval-status">
+                            <span class="approval-badge approval-rejected">
+                                <i class="fas fa-times-circle"></i> Booking declined by {{ booking['booked_username'] }}
+                            </span>
                         </div>
                         {% endif %}
                     </div>
@@ -366,52 +387,56 @@
                             <i class="fas fa-times"></i> Decline
                         </button>
                     </div>
-                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'requested' %}
-                    <div class="booking-approval-section">
-                        <div class="approval-prompt">
-                            <i class="fas fa-question-circle"></i>
-                            <strong>Did you deliver the service for this booking?</strong>
-                            <p>The booker has requested service approval. Please confirm whether you delivered the service.</p>
-                        </div>
-                        <div class="approval-actions">
-                            <button class="approve-service-btn" onclick="approveService({{ booking['id'] }})">
-                                <i class="fas fa-check"></i> Yes, Service Delivered
-                            </button>
-                            <button class="reject-service-btn" onclick="openRejectModal({{ booking['id'] }})">
-                                <i class="fas fa-times"></i> No, Not Delivered
-                            </button>
-                        </div>
-                    </div>
-                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'approved' %}
+                    {% elif booking['status'] == 'accepted' %}
                     <div class="booking-approval-status">
-                        <span class="approval-badge approval-approved">
-                            <i class="fas fa-check-circle"></i> Service approved — payout processing
+                        <span class="approval-badge approval-accepted">
+                            <i class="fas fa-check-circle"></i> Booking accepted — waiting for payment
                         </span>
-                        {% if booking['payout_status'] == 'paid' %}
-                            <span class="payout-badge payout-paid">
-                                <i class="fas fa-check-circle"></i> Payout of KES {{ booking['daily_rate'] | int }} completed
+                        <p class="status-description">The booker will complete payment. Once paid, you'll be notified to perform your service on the event day.</p>
+                    </div>
+                    {% elif booking['status'] == 'paid' %}
+                    <div class="booking-approval-status">
+                        <span class="approval-badge approval-paid">
+                            <i class="fas fa-credit-card"></i> Payment received — KES {{ booking['total_amount'] | int }}
+                        </span>
+                        {% if booking['approval_status'] == 'waiting_for_event' %}
+                            <span class="approval-badge approval-waiting-event">
+                                <i class="fas fa-calendar-check"></i> Waiting for event day
                             </span>
-                        {% elif booking['payout_status'] == 'waiting_payout' %}
-                            <span class="payout-badge payout-waiting">
-                                <i class="fas fa-clock"></i> Payout will be processed in 30-60 minutes
+                            <p class="status-description">Please perform your service on the event day. After the event, the booker will confirm delivery and you'll receive your payout.</p>
+                        {% elif booking['approval_status'] == 'delivery_check_sent' %}
+                            <span class="approval-badge approval-waiting-event">
+                                <i class="fas fa-hourglass-half"></i> Waiting for booker confirmation
                             </span>
+                            <p class="status-description">The booker has been asked to confirm service delivery. You'll be paid once they confirm.</p>
+                        {% elif booking['approval_status'] == 'approved' %}
+                            <span class="approval-badge approval-approved">
+                                <i class="fas fa-check-circle"></i> Service confirmed by booker
+                            </span>
+                            {% if booking['payout_status'] == 'scheduled_for_event' %}
+                                <span class="payout-badge payout-waiting">
+                                    <i class="fas fa-clock"></i> Payout will be processed 2 hours before event end
+                                </span>
+                            {% elif booking['payout_status'] == 'paid' %}
+                                <span class="payout-badge payout-paid">
+                                    <i class="fas fa-check-circle"></i> Payout of KES {{ booking['daily_rate'] | int }} completed
+                                </span>
+                            {% endif %}
+                        {% elif booking['approval_status'] == 'rejected' %}
+                            <span class="approval-badge approval-rejected">
+                                <i class="fas fa-times-circle"></i> Service not confirmed by booker
+                            </span>
+                            {% if booking['rejection_reason'] %}
+                                <div class="rejection-reason">
+                                    <i class="fas fa-info-circle"></i> Reason: {{ booking['rejection_reason'] }}
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </div>
-                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'rejected' %}
+                    {% elif booking['status'] == 'declined' %}
                     <div class="booking-approval-status">
                         <span class="approval-badge approval-rejected">
-                            <i class="fas fa-times-circle"></i> Service not delivered
-                        </span>
-                        {% if booking['rejection_reason'] %}
-                            <div class="rejection-reason">
-                                <i class="fas fa-info-circle"></i> Reason: {{ booking['rejection_reason'] }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    {% elif booking['status'] == 'accepted' and booking['approval_status'] == 'not_requested' %}
-                    <div class="booking-approval-status">
-                        <span class="approval-badge approval-not-requested">
-                            <i class="fas fa-hourglass-start"></i> Waiting for booker to request approval
+                            <i class="fas fa-times-circle"></i> Booking declined
                         </span>
                     </div>
                     {% endif %}
@@ -657,7 +682,7 @@
         </div>
     </div>
 
-    <!-- Rejection Reason Modal -->
+    <!-- Rejection Reason Modal (Provider) -->
     <div class="modal-overlay" id="reject-modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -682,6 +707,38 @@
                         </button>
                         <button type="submit" class="reject-confirm-btn">
                             <i class="fas fa-times"></i> Submit Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Delivery Modal (Booker) -->
+    <div class="modal-overlay" id="reject-delivery-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-times-circle"></i> Service Not Delivered</h2>
+                <button class="modal-close" onclick="closeRejectDeliveryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="reject-delivery-form" onsubmit="submitRejectDelivery(event)">
+                    <input type="hidden" id="reject-delivery-booking-id">
+
+                    <div class="form-group">
+                        <label for="reject-delivery-reason">
+                            <i class="fas fa-info-circle"></i> Why was the service not delivered? *
+                        </label>
+                        <textarea id="reject-delivery-reason" rows="4" required
+                                  placeholder="Please explain why the provider did not deliver the service..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="cancel-btn" onclick="closeRejectDeliveryModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="reject-confirm-btn">
+                            <i class="fas fa-times"></i> Submit
                         </button>
                     </div>
                 </form>

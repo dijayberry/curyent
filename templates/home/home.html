@@ -65,7 +65,9 @@
             <li><a href="/chat"><i class="fas fa-comments"></i>{{ ui.get('nav_chat_label', 'Chat') }} <span class="notification-badge" id="chat-badge-desktop" style="display:none;">0</span></a></li>
             <li><a href="/notifications"><i class="fas fa-bell"></i>{{ ui.get('nav_notifications_label', 'Notifications') }} <span class="notification-badge" id="notif-badge-desktop" style="display:none;">0</span></a></li>
             <li><a href="/friends"><i class="fas fa-user-group"></i>{{ ui.get('nav_friends_label', 'Friends') }}</a></li>
+            {% if not logged_in %}
             <li><a href="/account"><i class="fas fa-user"></i>{{ ui.get('nav_account_label', 'Account') }}</a></li>
+            {% endif %}
         </ul>
 
         <!-- Profile section: shown only on big screens -->

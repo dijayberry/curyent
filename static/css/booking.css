@@ -1762,6 +1762,118 @@ body {
 }
 
 /* =========================
+   DELIVERY CHECK SECTION (Booker)
+========================= */
+
+.delivery-check-section {
+    background: rgba(107, 63, 160, 0.15);
+    border: 1px solid rgba(201, 160, 255, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.delivery-check-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.delivery-check-prompt i {
+    font-size: 28px;
+    color: #c9a0ff;
+}
+
+.delivery-check-prompt strong {
+    font-size: 15px;
+    color: #ffffff;
+}
+
+.delivery-check-prompt p {
+    font-size: 13px;
+    color: #b39ddb;
+    margin: 0;
+}
+
+.delivery-check-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.confirm-delivery-btn,
+.reject-delivery-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirm-delivery-btn {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.confirm-delivery-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+.reject-delivery-btn {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.reject-delivery-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+}
+
+/* New badge types */
+.approval-paid {
+    background: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    color: #2196f3;
+}
+
+.approval-accepted {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+}
+
+.approval-waiting-event {
+    background: rgba(156, 39, 176, 0.1);
+    border: 1px solid rgba(156, 39, 176, 0.3);
+    color: #ce93d8;
+}
+
+.approval-pending {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+}
+
+.status-description {
+    font-size: 12px;
+    color: #9e9e9e;
+    margin: 6px 0 0 0;
+    line-height: 1.5;
+}
+
+/* =========================
    RESPONSIVE
 ========================= */
 
@@ -1852,5 +1964,15 @@ body {
 
     .multi-item-role {
         margin-left: auto;
+    }
+
+    .delivery-check-actions {
+        flex-direction: column;
+    }
+
+    .confirm-delivery-btn,
+    .reject-delivery-btn {
+        justify-content: center;
+        width: 100%;
     }
 }

@@ -180,6 +180,12 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    cursor: pointer;
+}
+
+.chat-contact-avatar-item:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
 }
 
 .chat-contact-avatar-item span {
@@ -376,6 +382,12 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
+    cursor: pointer;
+}
+
+.chat-contact-avatar:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
 }
 
 .chat-contact-avatar.online::after {

@@ -321,7 +321,7 @@
                 const displayTime = contact.time || '';
 
                 div.innerHTML = `
-                    <div class="chat-contact-avatar-item ${contact.online ? 'online' : ''}">
+                    <div class="chat-contact-avatar-item ${contact.online ? 'online' : ''}" data-contact-id="${contact.id}">
                         ${avatarHtml}
                         ${contact.online ? '<span class="online-dot"></span>' : ''}
                     </div>
@@ -337,6 +337,15 @@
                     </div>
                 `;
                 contactList.appendChild(div);
+            });
+
+            // Avatar click handler - redirect to review page
+            contactList.querySelectorAll('.chat-contact-avatar-item').forEach(function(avatarItem) {
+                avatarItem.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const contactId = this.getAttribute('data-contact-id');
+                    window.location.href = '/review/' + contactId;
+                });
             });
         }
 
@@ -478,6 +487,12 @@
             } else {
                 chatContactAvatar.innerHTML = `<span id="chat-contact-initial">${avatar}</span>`;
             }
+
+            // Avatar click handler - redirect to review page
+            chatContactAvatar.onclick = function(e) {
+                e.stopPropagation();
+                window.location.href = '/review/' + contactId;
+            };
 
             // Show chat view, hide empty state
             chatEmpty.style.display = 'none';

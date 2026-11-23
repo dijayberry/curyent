@@ -717,6 +717,117 @@ function processPayout(bookingId) {
 }
 
 /* =========================
+   DELIVERY CONFIRMATION (Booker)
+========================= */
+
+function confirmDelivery(bookingId, confirmed) {
+    if (confirmed) {
+        if (!confirm('Confirm that the provider delivered the service? Payout will be scheduled 2 hours before the event end time.')) {
+            return;
+        }
+    }
+
+    fetch('/api/booking/' + bookingId + '/confirm-delivery', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ confirmed: confirmed })
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to confirm delivery');
+            }
+            return data;
+        });
+    })
+    .then(function (data) {
+        if (data.success) {
+            showToast(data.message || 'Service confirmed!', 'success');
+            setTimeout(function () {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast(data.message || 'Failed to confirm delivery', 'error');
+        }
+    })
+    .catch(function (error) {
+        showToast(error.message || 'Something went wrong', 'error');
+    });
+}
+
+function openRejectDeliveryModal(bookingId) {
+    document.getElementById('reject-delivery-booking-id').value = bookingId;
+    document.getElementById('reject-delivery-reason').value = '';
+    document.getElementById('reject-delivery-modal').style.display = 'flex';
+}
+
+function closeRejectDeliveryModal() {
+    document.getElementById('reject-delivery-modal').style.display = 'none';
+}
+
+function submitRejectDelivery(event) {
+    event.preventDefault();
+    var bookingId = document.getElementById('reject-delivery-booking-id').value;
+    var reason = document.getElementById('reject-delivery-reason').value.trim();
+
+    if (!reason) {
+        showToast('Please provide a reason', 'error');
+        return;
+    }
+
+    fetch('/api/booking/' + bookingId + '/confirm-delivery', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ confirmed: false, reason: reason })
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to submit rejection');
+            }
+            return data;
+        });
+    })
+    .then(function (data) {
+        if (data.success) {
+            showToast(data.message || 'Rejection submitted', 'success');
+            closeRejectDeliveryModal();
+            setTimeout(function () {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast(data.message || 'Failed to submit rejection', 'error');
+        }
+    })
+    .catch(function (error) {
+        showToast(error.message || 'Something went wrong', 'error');
+    });
+}
+
+// Auto-check delivery status on page load for paid bookings
+window.addEventListener('DOMContentLoaded', function () {
+    // Check scheduler periodically (every 60 seconds)
+    setInterval(function () {
+        fetch('/api/booking/scheduler/check-delivery', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success && data.notified_count > 0) {
+                // Reload to show new delivery check prompts
+                location.reload();
+            }
+        })
+        .catch(function () {});
+    }, 60000);
+});
+
+/* =========================
    MULTI-BOOKING LOGIC
 ========================= */
 

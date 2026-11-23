@@ -426,7 +426,7 @@ def get_bookable_profiles(exclude_user_id=None, exclude_role=None):
 
 
 def get_user_bookings(user_id):
-    """Get all bookings made by a user."""
+    """Get all bookings made by a user (as booker)."""
     conn = get_book_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -1056,6 +1056,19 @@ def accept_booking(booking_id):
         conn.close()
         return jsonify({'success': False, 'message': 'This booking is no longer pending'}), 400
 
+    # Get booker's username for notifications
+    booker_username = ''
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT username FROM users WHERE id = ?', (booking['booker_id'],))
+        booker_row = main_cursor.fetchone()
+        main_conn.close()
+        if booker_row:
+            booker_username = booker_row['username']
+    except Exception:
+        pass
+
     cursor.execute('UPDATE bookings SET status = ? WHERE id = ?', ('accepted', booking_id))
     conn.commit()
     booker_id = booking['booker_id']
@@ -1066,7 +1079,7 @@ def accept_booking(booking_id):
         noti_module.create_notification(
             user_id=booker_id,
             title='Booking accepted',
-            message=f'Your booking request for {booking["celebration_title"]} has been accepted. Payment is now required.',
+            message=f'{session.get("username", "The provider")} has accepted your booking for {booking["celebration_title"] or "the event"}. Payment is now required.',
             notification_type='booking_accepted',
             related_item_id=booking_id,
             priority='medium',
@@ -1102,7 +1115,7 @@ def accept_booking(booking_id):
 
     return jsonify({
         'success': True,
-        'message': 'Booking accepted successfully — payment prompt sent to booker',
+        'message': 'Booking accepted successfully — payment prompt sent to ' + booker_username,
         'payment': mpesa_result
     })
 
@@ -1205,34 +1218,43 @@ def cancel_booking(booking_id):
 # Service Approval & Payout
 # =========================
 
-def send_approval_notification(booking):
+def send_service_delivery_check_notification(booking):
     """
-    Send a WhatsApp notification to the booked person asking for service approval.
-    Uses the WhatsApp Business Cloud API via whatsapp.py.
+    Send a notification to the BOOKER asking if the provider delivered the service.
+    This is triggered 30 minutes after the celebration start time.
     """
     try:
-        # Get the booked person's phone number
+        # Get the booker's phone number
         main_conn = main_db.get_db()
         main_cursor = main_conn.cursor()
-        main_cursor.execute('SELECT phone FROM users WHERE id = ?', (booking['booked_id'],))
-        user_row = main_cursor.fetchone()
+        main_cursor.execute('SELECT phone, username FROM users WHERE id = ?', (booking['booker_id'],))
+        booker_row = main_cursor.fetchone()
         main_conn.close()
 
-        if not user_row or not user_row['phone']:
-            return {'success': False, 'message': 'No phone number found for booked person'}
+        if not booker_row or not booker_row['phone']:
+            return {'success': False, 'message': 'No phone number found for booker'}
 
-        phone_number = user_row['phone']
+        phone_number = booker_row['phone']
+        booker_username = booker_row['username']
 
-        # Build the approval message
+        # Get provider username
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT username FROM users WHERE id = ?', (booking['booked_id'],))
+        provider_row = main_cursor.fetchone()
+        main_conn.close()
+        provider_username = provider_row['username'] if provider_row else 'the provider'
+
+        # Build the service delivery check message
         message_body = (
-            f'CURYENT - Service Approval Request\n\n'
-            f'You have been booked for an event.\n'
+            f'CURYENT - Service Delivery Check\n\n'
+            f'Hi {booker_username},\n\n'
+            f'Did {provider_username} deliver the service for this booking?\n'
+            f'Celebration: {booking["celebration_title"] or "Event"}\n'
             f'Event Start: {booking["event_start_date"] or "Not set"}\n'
-            f'Event End: {booking["event_end_date"] or "Not set"}\n'
-            f'Total Amount: KES {booking["total_amount"]:.0f}\n'
-            f'You Will Receive: KES {booking["daily_rate"]:.0f}\n\n'
-            f'Please log in to CURYENT to approve or decline this service request.\n'
-            f'Your approval confirms you delivered the service.'
+            f'Event End: {booking["event_end_date"] or "Not set"}\n\n'
+            f'Please log in to CURYENT to confirm whether {provider_username} delivered the service.\n'
+            f'Your confirmation is needed to process the payment to the provider.'
         )
 
         # Send via unified WhatsApp helper
@@ -1240,13 +1262,65 @@ def send_approval_notification(booking):
         result = whatsapp_module.send_message(phone_number, message_body)
 
         if result['success']:
-            return {'success': True, 'message': 'Approval notification sent via WhatsApp'}
+            return {'success': True, 'message': 'Service delivery check sent via WhatsApp'}
         else:
-            return {'success': True, 'message': 'Approval notification queued (delivery retry later)'}
+            return {'success': True, 'message': 'Service delivery check queued (delivery retry later)'}
 
     except Exception as e:
-        print(f'[APPROVAL DEBUG] Failed to send notification: {str(e)}')
-        return {'success': True, 'message': 'Approval notification queued (delivery retry later)'}
+        print(f'[SERVICE DELIVERY CHECK] Failed to send notification: {str(e)}')
+        return {'success': True, 'message': 'Service delivery check queued (delivery retry later)'}
+
+
+def send_payment_approved_notification(booking):
+    """
+    Send a notification to the PROVIDER that the booker has completed payment.
+    The provider can now wait for the event day and perform their service.
+    """
+    try:
+        # Get the provider's phone number
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT phone, username FROM users WHERE id = ?', (booking['booked_id'],))
+        provider_row = main_cursor.fetchone()
+        main_conn.close()
+
+        if not provider_row or not provider_row['phone']:
+            return {'success': False, 'message': 'No phone number found for provider'}
+
+        phone_number = provider_row['phone']
+        provider_username = provider_row['username']
+
+        # Get booker username
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT username FROM users WHERE id = ?', (booking['booker_id'],))
+        booker_row = main_cursor.fetchone()
+        main_conn.close()
+        booker_username = booker_row['username'] if booker_row else 'the booker'
+
+        message_body = (
+            f'CURYENT - Payment Received!\n\n'
+            f'Hi {provider_username},\n\n'
+            f'{booker_username} has completed payment for your service.\n'
+            f'Celebration: {booking["celebration_title"] or "Event"}\n'
+            f'Event Date: {booking["event_start_date"] or "Not set"}\n'
+            f'Amount: KES {booking["total_amount"]:.0f}\n\n'
+            f'Please perform your service on the event day.\n'
+            f'You will be paid after the booker confirms service delivery.'
+        )
+
+        # Send via unified WhatsApp helper
+        import templates.account.whatsapp as whatsapp_module
+        result = whatsapp_module.send_message(phone_number, message_body)
+
+        if result['success']:
+            return {'success': True, 'message': 'Payment approved notification sent via WhatsApp'}
+        else:
+            return {'success': True, 'message': 'Payment approved notification queued (delivery retry later)'}
+
+    except Exception as e:
+        print(f'[PAYMENT APPROVED] Failed to send notification: {str(e)}')
+        return {'success': True, 'message': 'Payment approved notification queued (delivery retry later)'}
 
 
 def send_payout_notification(booking):
@@ -1319,12 +1393,11 @@ def send_rejection_notification(booking):
         return {'success': True, 'message': 'Rejection notification queued'}
 
 
-@book_bp.route('/api/booking/<int:booking_id>/request-approval', methods=['POST'])
-def request_service_approval(booking_id):
+@book_bp.route('/api/booking/<int:booking_id>/check-service-delivery', methods=['GET'])
+def check_service_delivery(booking_id):
     """
-    Request service approval from the booked person.
-    This is called when the event start date approaches or the booker confirms the event has occurred.
-    Sends a notification to the booked person to approve that service was delivered.
+    Check if the booker should be asked to confirm service delivery.
+    Returns whether 30 minutes have passed since event start time.
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -1339,36 +1412,269 @@ def request_service_approval(booking_id):
         conn.close()
         return jsonify({'success': False, 'message': 'Booking not found'}), 404
 
-    # Only the booker can request approval
+    if booking['booker_id'] != user_id and booking['booked_id'] != user_id:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not involved in this booking'}), 403
+
+    booking_dict = dict(booking)
+    should_ask = False
+    time_remaining = None
+
+    # Check if 30 minutes have passed since event start
+    if booking.get('event_start_date') and booking.get('start_time'):
+        try:
+            event_start = datetime.fromisoformat(booking['event_start_date'] + 'T' + booking['start_time'])
+            check_time = event_start + timedelta(minutes=30)
+            now = datetime.now()
+            if now >= check_time:
+                should_ask = True
+            else:
+                time_remaining = (check_time - now).total_seconds()
+        except (ValueError, TypeError):
+            pass
+    elif booking.get('event_start_date'):
+        try:
+            event_start = datetime.fromisoformat(booking['event_start_date'])
+            check_time = event_start + timedelta(minutes=30)
+            now = datetime.now()
+            if now >= check_time:
+                should_ask = True
+            else:
+                time_remaining = (check_time - now).total_seconds()
+        except (ValueError, TypeError):
+            pass
+
+    conn.close()
+    return jsonify({
+        'success': True,
+        'booking': booking_dict,
+        'should_ask_delivery': should_ask,
+        'time_remaining_seconds': time_remaining
+    })
+
+
+@book_bp.route('/api/booking/<int:booking_id>/confirm-delivery', methods=['POST'])
+def confirm_service_delivery(booking_id):
+    """
+    The BOOKER confirms whether the provider delivered the service.
+    If confirmed (Yes), payout is scheduled for 2 hours before event end.
+    If not confirmed (No), provider must give a reason.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Please log in'}), 401
+
+    data = request.get_json()
+    confirmed = data.get('confirmed', False)  # True = Yes delivered, False = No not delivered
+    reason = data.get('reason', '').strip() if not confirmed else ''
+
+    conn = get_book_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT b.*, bu.username as booker_username
+        FROM bookings b
+        JOIN users bu ON b.booker_id = bu.id
+        WHERE b.id = ?
+    ''', (booking_id,))
+    booking = cursor.fetchone()
+
+    if not booking:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking not found'}), 404
+
+    # Only the booker can confirm delivery
     if booking['booker_id'] != user_id:
         conn.close()
-        return jsonify({'success': False, 'message': 'Only the booker can request approval'}), 403
+        return jsonify({'success': False, 'message': 'Only the booker can confirm service delivery'}), 403
 
-    if booking['status'] != 'accepted':
+    if booking['status'] not in ('paid', 'accepted'):
         conn.close()
-        return jsonify({'success': False, 'message': 'Booking must be accepted before requesting approval'}), 400
+        return jsonify({'success': False, 'message': 'Booking must be paid before confirming delivery'}), 400
 
-    # Check if approval already requested
-    if booking['approval_status'] in ('requested', 'approved', 'rejected'):
+    if booking['approval_status'] in ('approved', 'rejected'):
         conn.close()
-        return jsonify({'success': False, 'message': 'Approval already requested or resolved'}), 400
+        return jsonify({'success': False, 'message': 'Delivery already confirmed or rejected'}), 400
 
-    # Update booking approval status
-    cursor.execute('UPDATE bookings SET approval_status = ? WHERE id = ?', ('requested', booking_id))
+    now = datetime.now().isoformat()
 
-    # Create approval record
-    cursor.execute('INSERT INTO service_approvals (booking_id) VALUES (?)', (booking_id,))
-    conn.commit()
+    if confirmed:
+        # Booker confirms provider delivered — schedule payout
+        cursor.execute('''
+            UPDATE bookings SET approval_status = ?, approved_at = ?, payout_status = ?
+            WHERE id = ?
+        ''', ('approved', now, 'scheduled_for_event', booking_id))
+
+        # Update approval record if exists
+        cursor.execute('''
+            UPDATE service_approvals SET approved = 1, responded_at = ?
+            WHERE booking_id = ?
+        ''', (now, booking_id))
+
+        conn.commit()
+
+        # Calculate payout time (2 hours before event end)
+        payout_amount = booking['daily_rate']
+        estimated_payout_time = None
+        if booking['event_end_date']:
+            try:
+                estimated_payout_time = datetime.fromisoformat(booking['event_end_date']) - timedelta(hours=2)
+            except (ValueError, TypeError):
+                pass
+
+        # Notify provider that service is confirmed and payout is scheduled
+        try:
+            noti_module.create_notification(
+                user_id=booking['booked_id'],
+                title='Service confirmed!',
+                message=f'{booking["booker_username"]} confirmed you delivered the service for {booking["celebration_title"] or "the event"}. Payout of KES {payout_amount:.0f} is scheduled.',
+                notification_type='event_confirmed',
+                related_item_id=booking_id,
+                priority='high',
+                action_url=f'/bookings?tab=received&id={booking_id}',
+                action_label='View Details'
+            )
+        except Exception:
+            pass
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Service confirmed! Payout will be processed 2 hours before the event end time.',
+            'payout_amount': payout_amount,
+            'estimated_payout_time': estimated_payout_time.strftime('%Y-%m-%d %H:%M') if estimated_payout_time else None
+        })
+
+    else:
+        # Booker says provider did NOT deliver
+        if not reason:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Please provide a reason why the service was not delivered'}), 400
+
+        cursor.execute('''
+            UPDATE bookings SET approval_status = ?, rejection_reason = ?, payout_status = ?
+            WHERE id = ?
+        ''', ('rejected', reason, 'cancelled', booking_id))
+
+        # Update approval record if exists
+        cursor.execute('''
+            UPDATE service_approvals SET approved = 0, responded_at = ?, rejection_reason = ?
+            WHERE booking_id = ?
+        ''', (now, reason, booking_id))
+
+        conn.commit()
+
+        # Notify provider that service was not confirmed
+        try:
+            noti_module.create_notification(
+                user_id=booking['booked_id'],
+                title='Service not confirmed',
+                message=f'{booking["booker_username"]} indicated the service was not delivered for {booking["celebration_title"] or "the event"}. Reason: {reason}',
+                notification_type='booking_cancelled',
+                related_item_id=booking_id,
+                priority='high',
+                action_url=f'/bookings?tab=received&id={booking_id}',
+                action_label='View Details'
+            )
+        except Exception:
+            pass
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'Service not confirmed. Reason has been recorded.',
+        })
+
+
+@book_bp.route('/api/booking/scheduler/check-delivery', methods=['POST'])
+def scheduler_check_delivery():
+    """
+    Scheduler endpoint: Check all paid bookings where event start + 30 min has passed.
+    Send notifications to bookers to confirm service delivery.
+    This can be called by a cron job or periodically from the frontend.
+    """
+    conn = get_book_db()
+    cursor = conn.cursor()
+
+    # Find bookings where:
+    # - status is 'paid' (payment confirmed)
+    # - approval_status is 'waiting_for_event' (not yet asked)
+    # - event_start_date + start_time + 30 min has passed
+    cursor.execute('''
+        SELECT * FROM bookings
+        WHERE status = 'paid'
+        AND approval_status = 'waiting_for_event'
+        AND event_start_date IS NOT NULL
+    ''')
+    bookings = cursor.fetchall()
     conn.close()
 
-    # Send notification to the booked person
-    booking['approval_status'] = 'requested'
-    notification_result = send_approval_notification(booking)
+    notified = []
+    now = datetime.now()
+
+    for booking in bookings:
+        booking_dict = dict(booking)
+        event_start = None
+
+        # Parse event start time
+        if booking.get('event_start_date') and booking.get('start_time'):
+            try:
+                event_start = datetime.fromisoformat(booking['event_start_date'] + 'T' + booking['start_time'])
+            except (ValueError, TypeError):
+                pass
+        elif booking.get('event_start_date'):
+            try:
+                event_start = datetime.fromisoformat(booking['event_start_date'])
+            except (ValueError, TypeError):
+                pass
+
+        if event_start is None:
+            continue
+
+        # Check if 30 minutes have passed
+        check_time = event_start + timedelta(minutes=30)
+        if now >= check_time:
+            # Update approval status to 'delivery_check_sent'
+            conn2 = get_book_db()
+            cursor2 = conn2.cursor()
+            cursor2.execute('UPDATE bookings SET approval_status = ? WHERE id = ?',
+                           ('delivery_check_sent', booking['id']))
+            conn2.commit()
+            conn2.close()
+
+            # Send notification to the BOOKER
+            try:
+                # Get provider username
+                main_conn = main_db.get_db()
+                main_cursor = main_conn.cursor()
+                main_cursor.execute('SELECT username FROM users WHERE id = ?', (booking['booked_id'],))
+                provider_row = main_cursor.fetchone()
+                main_conn.close()
+                provider_username = provider_row['username'] if provider_row else 'the provider'
+
+                noti_module.create_notification(
+                    user_id=booking['booker_id'],
+                    title='Service delivery check',
+                    message=f'Did {provider_username} deliver the service for {booking["celebration_title"] or "the event"}? Please confirm to process payment.',
+                    notification_type='event_reminder',
+                    related_item_id=booking['id'],
+                    priority='high',
+                    action_url=f'/bookings?tab=my&id={booking["id"]}',
+                    action_label='Confirm Delivery'
+                )
+
+                # Also send WhatsApp
+                send_service_delivery_check_notification(booking_dict)
+                notified.append(booking['id'])
+
+            except Exception as e:
+                print(f'[SCHEDULER] Failed to notify booker for booking {booking["id"]}: {e}')
 
     return jsonify({
         'success': True,
-        'message': 'Approval request sent to the booked person',
-        'notification': notification_result.get('message', '')
+        'notified_count': len(notified),
+        'booking_ids': notified
     })
 
 
@@ -1659,16 +1965,41 @@ def mpesa_c2b_callback():
                 booking_id = int(bill_number.split('-')[1])
                 conn = get_book_db()
                 cursor = conn.cursor()
-                cursor.execute('SELECT id, status FROM bookings WHERE id = ?', (booking_id,))
+                cursor.execute('''
+                    SELECT b.*, bu.username as booker_username
+                    FROM bookings b
+                    JOIN users bu ON b.booker_id = bu.id
+                    WHERE b.id = ?
+                ''', (booking_id,))
                 booking = cursor.fetchone()
                 if booking:
                     # Update booking to reflect payment received
                     cursor.execute('''
-                        UPDATE bookings SET status = 'paid'
+                        UPDATE bookings SET status = 'paid', approval_status = 'waiting_for_event'
                         WHERE id = ? AND status IN ('pending', 'accepted')
                     ''', (booking_id,))
                     conn.commit()
+                    conn.close()
                     print(f'[M-Pesa Callback] Booking {booking_id} marked as paid (KES {amount})')
+
+                    # Notify the provider that payment has been received
+                    booking_dict = dict(booking)
+                    booking_dict['status'] = 'paid'
+                    booking_dict['approval_status'] = 'waiting_for_event'
+                    try:
+                        noti_module.create_notification(
+                            user_id=booking['booked_id'],
+                            title='Payment received',
+                            message=f'{booking["booker_username"]} has completed payment for {booking["celebration_title"] or "the event"}. Please perform your service on the event day.',
+                            notification_type='payment_received',
+                            related_item_id=booking_id,
+                            priority='high',
+                            action_url=f'/bookings?tab=received&id={booking_id}',
+                            action_label='View Details'
+                        )
+                    except Exception:
+                        pass
+                    send_payment_approved_notification(booking_dict)
             except Exception as e:
                 print(f'[M-Pesa Callback] Error updating booking: {e}')
 
