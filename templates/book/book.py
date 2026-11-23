@@ -1120,6 +1120,74 @@ def accept_booking(booking_id):
     })
 
 
+@book_bp.route('/api/booking/<int:booking_id>/initiate-payment', methods=['POST'])
+def initiate_payment(booking_id):
+    """Initiate M-Pesa payment for an accepted booking (only the booker can trigger)."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Please log in'}), 401
+
+    conn = get_book_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM bookings WHERE id = ?', (booking_id,))
+    booking = cursor.fetchone()
+
+    if not booking:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Booking not found'}), 404
+
+    if booking['booker_id'] != user_id:
+        conn.close()
+        return jsonify({'success': False, 'message': 'You are not authorized to pay for this booking'}), 403
+
+    if booking['status'] == 'paid':
+        conn.close()
+        return jsonify({'success': False, 'message': 'This booking is already paid'}), 400
+
+    if booking['status'] not in ('pending', 'accepted'):
+        conn.close()
+        return jsonify({'success': False, 'message': 'Payment can only be initiated for pending or accepted bookings'}), 400
+
+    conn.close()
+
+    # Get booker's phone number
+    booker_phone = ''
+    try:
+        main_conn = main_db.get_db()
+        main_cursor = main_conn.cursor()
+        main_cursor.execute('SELECT phone FROM users WHERE id = ?', (user_id,))
+        booker_row = main_cursor.fetchone()
+        main_conn.close()
+        if booker_row:
+            booker_phone = booker_row['phone'] or ''
+    except Exception:
+        pass
+
+    if not booker_phone:
+        return jsonify({'success': False, 'message': 'Phone number not found. Please update your profile.'}), 400
+
+    # Initiate M-Pesa STK Push
+    mpesa_result = mpesa_module.initiate_stk_push(
+        phone_number=booker_phone,
+        amount=booking['total_amount'],
+        account_reference=f'CURYENT-{booking_id}',
+        transaction_desc=f'Booking for {booking["celebration_title"]}',
+        booking_id=booking_id
+    )
+
+    if mpesa_result.get('success'):
+        return jsonify({
+            'success': True,
+            'message': 'Payment request sent to your phone. Please enter your M-Pesa PIN.',
+            'payment': mpesa_result
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': mpesa_result.get('message', 'Payment initiation failed')
+        }), 400
+
+
 @book_bp.route('/api/booking/decline/<int:booking_id>', methods=['POST'])
 def decline_booking(booking_id):
     """Decline a booking request (only the booked user can decline)."""

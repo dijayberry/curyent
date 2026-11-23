@@ -238,9 +238,18 @@
                         <!-- Booking Status for Booker -->
                         {% if booking['status'] == 'accepted' and booking['approval_status'] not in ('approved', 'rejected') %}
                         <div class="booking-approval-status">
-                            <span class="approval-badge approval-pending">
-                                <i class="fas fa-clock"></i> Awaiting {{ booking['booked_username'] }} acceptance
+                            <span class="approval-badge approval-payment-required">
+                                <i class="fas fa-credit-card"></i> {{ booking['booked_username'] }} accepted — Payment required
                             </span>
+                            <div class="payment-continuation-section" id="payment-section-{{ booking['id'] }}">
+                                <p>Complete your payment of <strong>KES {{ booking['total_amount'] | int }}</strong> to confirm this booking.</p>
+                                <div class="payment-continuation-actions">
+                                    <button class="pay-now-btn" onclick="initiatePayment({{ booking['id'] }}, {{ booking['total_amount'] | int }})">
+                                        <i class="fas fa-mobile-alt"></i> Pay Now (M-Pesa)
+                                    </button>
+                                </div>
+                                <div class="payment-status-msg" id="payment-msg-{{ booking['id'] }}"></div>
+                            </div>
                         </div>
                         {% elif booking['status'] == 'paid' %}
                         <div class="booking-approval-status">

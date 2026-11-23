@@ -1133,3 +1133,44 @@ document.addEventListener('click', function (e) {
         closeMultiBookingModal();
     }
 });
+
+/* =========================
+   PAYMENT CONTINUATION
+========================= */
+
+function initiatePayment(bookingId, amount) {
+    var msgEl = document.getElementById('payment-msg-' + bookingId);
+    if (!msgEl) return;
+
+    msgEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending payment request to your phone...';
+    msgEl.style.color = '#c9a0ff';
+
+    fetch('/api/booking/' + bookingId + '/initiate-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function (response) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                throw new Error(data.message || 'Payment initiation failed');
+            }
+            return data;
+        });
+    })
+    .then(function (data) {
+        if (data.success) {
+            msgEl.innerHTML = '<i class="fas fa-check-circle"></i> Payment request sent! Please check your phone and enter your M-Pesa PIN.';
+            msgEl.style.color = '#34d399';
+            showToast('Payment request sent — check your phone', 'success');
+        } else {
+            msgEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Payment failed');
+            msgEl.style.color = '#f87171';
+            showToast(data.message || 'Payment failed', 'error');
+        }
+    })
+    .catch(function (error) {
+        msgEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + error.message;
+        msgEl.style.color = '#f87171';
+        showToast(error.message || 'Something went wrong', 'error');
+    });
+}
