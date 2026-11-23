@@ -147,6 +147,7 @@ if (sendOtpBtn) {
             if (data.success) {
                 if (data.otpFallback) {
                     // SMS failed but OTP code is available — show it on screen
+                    otpFallbackCode = data.otpCode; // Store for timer
                     phoneStatus.className = 'field-status warning';
                     phoneStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> SMS not available. Your OTP code is: <strong>' + data.otpCode + '</strong>';
 
@@ -160,11 +161,7 @@ if (sendOtpBtn) {
                         otpCodeInput.value = data.otpCode;
                         otpCodeInput.focus();
 
-                        // Show the code prominently in the OTP step
-                        if (otpTimer) {
-                            otpTimer.innerHTML = '<i class="fas fa-info-circle"></i> Your OTP code: <strong style="font-size:1.3em;letter-spacing:4px;">' + data.otpCode + '</strong>';
-                        }
-                        // Start countdown timer (5 minutes)
+                        // Start countdown timer (5 minutes) - timer will show the OTP code
                         startOtpTimer(300);
                     }, 2000);
                 } else if (data.otpSent === false) {
@@ -370,7 +367,18 @@ if (resendBtn) {
         .then(function (response) { return response.json(); })
         .then(function (data) {
             if (data.success) {
-                if (data.otpSent === false) {
+                if (data.otpFallback) {
+                    // SMS failed but OTP code is available — show it on screen
+                    otpFallbackCode = data.otpCode;
+                    otpStatus.className = 'field-status warning';
+                    otpStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> SMS not available. Your OTP code is: <strong>' + data.otpCode + '</strong>';
+                    // Auto-fill the OTP code
+                    otpCodeInput.value = data.otpCode;
+                    resendBtn.disabled = false;
+                    resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                    // Restart timer - will show the OTP code
+                    startOtpTimer(300);
+                } else if (data.otpSent === false) {
                     // WhatsApp delivery failed on resend — warn about rate limit
                     otpStatus.className = 'field-status error';
                     otpStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'WhatsApp delivery failed. Free trial limit: 1 message per minute. Please wait before retrying.');
