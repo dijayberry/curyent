@@ -101,6 +101,13 @@
                 <span>We sent a 6-digit code to <strong id="sent-phone"></strong></span>
             </div>
 
+            <!-- OTP Fallback Code Display (shown when SMS is not available) -->
+            <div class="otp-fallback-code" id="otp-fallback-code" style="display:none;">
+                <i class="fas fa-info-circle"></i>
+                <span>SMS not available. Your OTP code is:</span>
+                <strong id="otp-fallback-code-value"></strong>
+            </div>
+
             <div class="form-group">
                 <label for="otp-code">
                     <i class="fas fa-shield-halved"></i> OTP Code

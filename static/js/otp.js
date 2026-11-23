@@ -20,6 +20,9 @@ var verifyBtn = document.getElementById('verify-btn');
 var resendBtn = document.getElementById('resend-btn');
 var otpTimer = document.getElementById('otp-timer');
 
+var otpFallbackCodeEl = document.getElementById('otp-fallback-code');
+var otpFallbackCodeValueEl = document.getElementById('otp-fallback-code-value');
+
 var otpTimerInterval = null;
 var currentPhone = '';
 
@@ -156,6 +159,14 @@ if (sendOtpBtn) {
                         stepPhone.style.display = 'none';
                         stepOtp.style.display = 'block';
                         sentPhoneLabel.textContent = data.phone || currentPhone;
+
+                        // Show the OTP code prominently in the dedicated display area
+                        if (otpFallbackCodeValueEl) {
+                            otpFallbackCodeValueEl.textContent = data.otpCode;
+                        }
+                        if (otpFallbackCodeEl) {
+                            otpFallbackCodeEl.style.display = 'block';
+                        }
 
                         // Auto-fill the OTP code
                         otpCodeInput.value = data.otpCode;
@@ -372,6 +383,13 @@ if (resendBtn) {
                     otpFallbackCode = data.otpCode;
                     otpStatus.className = 'field-status warning';
                     otpStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> SMS not available. Your OTP code is: <strong>' + data.otpCode + '</strong>';
+                    // Show the OTP code prominently
+                    if (otpFallbackCodeValueEl) {
+                        otpFallbackCodeValueEl.textContent = data.otpCode;
+                    }
+                    if (otpFallbackCodeEl) {
+                        otpFallbackCodeEl.style.display = 'block';
+                    }
                     // Auto-fill the OTP code
                     otpCodeInput.value = data.otpCode;
                     resendBtn.disabled = false;
