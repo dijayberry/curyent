@@ -794,6 +794,16 @@ def complete_registration():
     })
 
 
+@account_bp.route('/account')
+def account_redirect():
+    """Redirect /account to profile for logged-in users, or to login for guests."""
+    from flask import redirect
+    user_id = session.get('user_id')
+    if user_id:
+        return redirect('/profile')
+    return redirect('/account/logi')
+
+
 @account_bp.route('/role')
 def about():
     return render_template('home/role.html')

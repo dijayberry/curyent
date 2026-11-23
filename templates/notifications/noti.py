@@ -82,6 +82,10 @@ def init_db():
 # =========================
 
 NOTIFICATION_TYPES = {
+    # Social Notifications
+    'new_follower': {'icon': 'fa-user-plus', 'color': '#c9a0ff'},
+    'new_friend': {'icon': 'fa-user-check', 'color': '#34d399'},
+
     # Booking Notifications
     'booking_request': {'icon': 'fa-book', 'color': '#60a5fa'},
     'booking_accepted': {'icon': 'fa-check-circle', 'color': '#34d399'},

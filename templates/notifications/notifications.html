@@ -215,6 +215,25 @@
             return typeOk && priorityOk;
         }
 
+        // Format message to highlight names and celebration titles
+        function formatMessage(message) {
+            if (!message) return '';
+            let html = message;
+            // Highlight celebration titles (wrapped in quotes or after "for ")
+            html = html.replace(/for\s+(.+?)(\.\s*,\s*|\.\s*$|,\s*)/g, function(match, title) {
+                return 'for <span class="notif-highlight-celebration">' + title.trim() + '</span>';
+            });
+            // Highlight usernames (after "has requested to book", "sent to", "Awaiting", etc.)
+            html = html.replace(/(?:has requested to book|sent to|Awaiting|from|by)\s+([a-zA-Z0-9_]+)/g, function(match, username) {
+                return match.replace(username, '<span class="notif-highlight-username">' + username + '</span>');
+            });
+            // Highlight usernames at the start of the message (e.g., "testclient has requested")
+            html = html.replace(/^([a-zA-Z0-9_]+)\s+(has|has requested)/, function(match, username) {
+                return '<span class="notif-highlight-username">' + username + '</span> $2';
+            });
+            return html;
+        }
+
         // Render a single notification card
         function renderNotificationCard(notif) {
             const unreadClass = notif.is_read ? '' : 'unread';
@@ -225,7 +244,7 @@
             if (notif.action_url && notif.action_label) {
                 actionButtons = `
                     <div class="notif-card-actions">
-                        <a href="${notif.action_url}" class="notif-action-btn primary">
+                        <a href="${notif.action_url}" class="notif-action-btn primary notif-view-details-btn" data-id="${notif.id}" data-url="${notif.action_url}">
                             ${notif.action_label}
                         </a>
                         <button class="notif-action-btn secondary notif-mark-read-btn" data-id="${notif.id}">
@@ -248,7 +267,7 @@
                             <h4 class="notif-card-title">${notif.title}</h4>
                             <span class="notif-card-time">${timeAgoText}</span>
                         </div>
-                        <p class="notif-card-message">${notif.message}</p>
+                        <p class="notif-card-message">${formatMessage(notif.message)}</p>
                         ${actionButtons}
                     </div>
                     <button class="notif-card-dismiss" data-id="${notif.id}" title="Dismiss">
@@ -296,6 +315,19 @@
                         if (actionUrl) {
                             window.location.href = actionUrl;
                         }
+                    });
+                });
+            });
+
+            // View Details button - mark as read before navigating
+            container.querySelectorAll('.notif-view-details-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    const url = this.dataset.url;
+                    markAsRead(id).then(() => {
+                        window.location.href = url;
                     });
                 });
             });

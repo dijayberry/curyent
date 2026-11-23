@@ -198,6 +198,9 @@
                     // For friends/following/followers tabs
                     if (relationship === 'friends' || user.status === 'friends') {
                         btnHtml = '<button class="btn-action btn-unfriend" data-target-id="' + user.id + '"><i class="fas fa-user-minus"></i> Unfriend</button>';
+                    } else if (tab === 'followers') {
+                        // Followers tab: show "Follow Back" button
+                        btnHtml = '<button class="btn-action btn-follow-back" data-target-id="' + user.id + '"><i class="fas fa-user-plus"></i> Follow Back</button>';
                     } else if (relationship === 'following' || user.status === 'following') {
                         btnHtml = '<button class="btn-action btn-unfollow" data-target-id="' + user.id + '"><i class="fas fa-user-minus"></i> Unfollow</button>';
                     }
@@ -224,6 +227,14 @@
         function attachCardListeners() {
             // Follow buttons
             document.querySelectorAll('.btn-follow').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target-id');
+                    followUser(targetId, this);
+                });
+            });
+
+            // Follow Back buttons (in Followers tab)
+            document.querySelectorAll('.btn-follow-back').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const targetId = this.getAttribute('data-target-id');
                     followUser(targetId, this);
@@ -275,6 +286,7 @@
                         btn.className = 'btn-action btn-friends';
                         btn.innerHTML = '<i class="fas fa-user-check"></i> Friends';
                         btn.disabled = true;
+                        showToast('🎉 You are now friends!', 'success');
                     } else {
                         btn.className = 'btn-action btn-unfollow';
                         btn.innerHTML = '<i class="fas fa-user-minus"></i> Unfollow';
@@ -284,6 +296,7 @@
                         btn.addEventListener('click', function() {
                             unfollowUser(targetId, btn);
                         });
+                        showToast('Now following!', 'success');
                     }
                     loadCounts();
                 } else {
@@ -390,7 +403,13 @@
             // Simple toast notification
             const toast = document.createElement('div');
             toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;color:#fff;font-size:14px;z-index:10000;animation:fadeIn 0.3s ease;';
-            toast.style.background = type === 'error' ? 'rgba(255,100,100,0.9)' : 'rgba(201,160,255,0.9)';
+            if (type === 'error') {
+                toast.style.background = 'rgba(255,100,100,0.9)';
+            } else if (type === 'success') {
+                toast.style.background = 'rgba(52,211,153,0.9)';
+            } else {
+                toast.style.background = 'rgba(201,160,255,0.9)';
+            }
             toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(function() {

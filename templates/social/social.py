@@ -9,6 +9,10 @@ from flask import Blueprint, render_template, jsonify, request, session, redirec
 import templates.account.db as main_db
 # Import the profile module for posts and feedback
 import templates.profile.profile as profile_module
+# Import notification module for follow/friend notifications
+import templates.notifications.noti as noti_module
+# Import chat module for sending welcome messages
+import templates.chat.chat as chat_module
 
 social_bp = Blueprint('social', __name__)
 
@@ -93,14 +97,14 @@ def init_social_db():
 # =========================
 
 def get_following(user_id):
-    """Get list of users that the given user is following."""
+    """Get list of users that the given user is following (not mutual friends)."""
     conn = get_social_db()
     cursor = conn.cursor()
     cursor.execute('''
         SELECT u.*, f.status
         FROM friends f
         JOIN users u ON f.friend_id = u.id
-        WHERE f.user_id = ?
+        WHERE f.user_id = ? AND f.status = 'following'
         ORDER BY f.created_at DESC
     ''', (user_id,))
     results = [dict(row) for row in cursor.fetchall()]
@@ -109,14 +113,14 @@ def get_following(user_id):
 
 
 def get_followers(user_id):
-    """Get list of users who are following the given user."""
+    """Get list of users who are following the given user (not mutual friends)."""
     conn = get_social_db()
     cursor = conn.cursor()
     cursor.execute('''
         SELECT u.*, f.status
         FROM friends f
         JOIN users u ON f.user_id = u.id
-        WHERE f.friend_id = ?
+        WHERE f.friend_id = ? AND f.status = 'following'
         ORDER BY f.created_at DESC
     ''', (user_id,))
     results = [dict(row) for row in cursor.fetchall()]
@@ -355,12 +359,74 @@ def api_follow():
     cursor.execute('SELECT status FROM friends WHERE user_id = ? AND friend_id = ?', (target_id, user_id))
     reverse = cursor.fetchone()
 
+    # Get usernames for notifications and messages
+    main_conn = main_db.get_db()
+    main_cursor = main_conn.cursor()
+    main_cursor.execute('SELECT username FROM users WHERE id = ?', (user_id,))
+    follower_row = main_cursor.fetchone()
+    follower_username = follower_row['username'] if follower_row else 'Someone'
+
+    main_cursor.execute('SELECT username FROM users WHERE id = ?', (target_id,))
+    target_row = main_cursor.fetchone()
+    target_username = target_row['username'] if target_row else 'Someone'
+    main_conn.close()
+
     if reverse:
         # Both following each other — set as friends
         status = 'friends'
         cursor.execute('UPDATE friends SET status = ? WHERE user_id = ? AND friend_id = ?', ('friends', target_id, user_id))
+
+        # Notify the person who followed first: "You are now friends with {follower_username}"
+        try:
+            noti_module.create_notification(
+                user_id=target_id,
+                title='New Friend!',
+                message=f'{follower_username} followed back. You are now friends!',
+                notification_type='new_friend',
+                related_item_id=user_id,
+                priority='medium',
+                action_url='/review/' + str(user_id),
+                action_label='View Profile'
+            )
+        except Exception:
+            pass
+
+        # Send welcome chat message to the person who followed first
+        try:
+            conv_id = chat_module.get_or_create_conversation(user_id, target_id)
+            welcome_msg = f'🎉 Hey {target_username}! We are now friends on CURYENT! Feel free to chat and connect. Let\'s engage more! 🚀'
+            chat_module.send_message(conv_id, user_id, welcome_msg)
+
+            # Also notify about the new message
+            noti_module.create_notification(
+                user_id=target_id,
+                title='New message',
+                message=f'{follower_username}: {welcome_msg[:100]}',
+                notification_type='new_message',
+                related_item_id=conv_id,
+                priority='low',
+                action_url='/chat',
+                action_label='Reply'
+            )
+        except Exception:
+            pass
     else:
         status = 'following'
+
+        # Notify the target: "{follower_username} started following you"
+        try:
+            noti_module.create_notification(
+                user_id=target_id,
+                title='New Follower',
+                message=f'{follower_username} started following you. Follow back to become friends!',
+                notification_type='new_follower',
+                related_item_id=user_id,
+                priority='medium',
+                action_url='/review/' + str(user_id),
+                action_label='Follow Back'
+            )
+        except Exception:
+            pass
 
     cursor.execute('''
         INSERT INTO friends (user_id, friend_id, status)
@@ -387,6 +453,10 @@ def api_unfollow():
     conn = get_social_db()
     cursor = conn.cursor()
 
+    # Check current status before deleting
+    cursor.execute('SELECT status FROM friends WHERE user_id = ? AND friend_id = ?', (user_id, target_id))
+    current_status = cursor.fetchone()
+
     cursor.execute('DELETE FROM friends WHERE user_id = ? AND friend_id = ?', (user_id, target_id))
     conn.commit()
     deleted = cursor.rowcount > 0
@@ -394,6 +464,41 @@ def api_unfollow():
 
     if not deleted:
         return jsonify({'success': False, 'message': 'Not following this user'}), 400
+
+    # If it was a mutual friend, notify the other person
+    if current_status and current_status['status'] == 'friends':
+        # Also remove the reverse relationship (they are no longer friends)
+        conn = get_social_db()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM friends WHERE user_id = ? AND friend_id = ?', (target_id, user_id))
+        conn.commit()
+        conn.close()
+
+        # Get usernames for notification
+        try:
+            main_conn = main_db.get_db()
+            main_cursor = main_conn.cursor()
+            main_cursor.execute('SELECT username FROM users WHERE id = ?', (user_id,))
+            unfollower_row = main_cursor.fetchone()
+            unfollower_username = unfollower_row['username'] if unfollower_row else 'Someone'
+
+            main_cursor.execute('SELECT username FROM users WHERE id = ?', (target_id,))
+            target_row = main_cursor.fetchone()
+            target_username = target_row['username'] if target_row else 'Someone'
+            main_conn.close()
+
+            noti_module.create_notification(
+                user_id=target_id,
+                title='Friend Removed',
+                message=f'{unfollower_username} is no longer your friend.',
+                notification_type='system',
+                related_item_id=user_id,
+                priority='low',
+                action_url='/review/' + str(user_id),
+                action_label='View Profile'
+            )
+        except Exception:
+            pass
 
     return jsonify({'success': True, 'message': 'Unfollowed'})
 
