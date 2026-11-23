@@ -77,10 +77,10 @@
                     </div>
                 </div>
                 <div class="chat-header-actions">
-                    <button class="chat-action-btn" title="Voice call">
+                    <button class="chat-action-btn" id="chat-voice-call-btn" title="Voice call">
                         <i class="fas fa-phone"></i>
                     </button>
-                    <button class="chat-action-btn" title="Video call">
+                    <button class="chat-action-btn" id="chat-video-call-btn" title="Video call">
                         <i class="fas fa-video"></i>
                     </button>
                     <button class="chat-action-btn" title="More options">
@@ -130,6 +130,40 @@
             </div>
             <div class="chat-slide-up-list" id="chat-slide-up-list">
                 <!-- Users will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Modal -->
+    <div class="chat-call-overlay" id="chat-call-overlay">
+        <div class="chat-call-modal">
+            <div class="chat-call-header">
+                <h3 id="chat-call-title">Voice Call</h3>
+                <button class="chat-call-close" id="chat-call-close" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-call-body">
+                <div class="chat-call-avatar" id="chat-call-avatar">
+                    <span id="chat-call-initial">?</span>
+                </div>
+                <h4 id="chat-call-name">Contact</h4>
+                <p class="chat-call-status" id="chat-call-status">Calling...</p>
+                <div class="chat-call-video" id="chat-call-video" style="display:none;">
+                    <video id="chat-remote-video" autoplay playsinline></video>
+                    <video id="chat-local-video" autoplay playsinline muted></video>
+                </div>
+            </div>
+            <div class="chat-call-actions">
+                <button class="chat-call-action-btn" id="chat-call-mute" title="Mute">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="chat-call-action-btn chat-call-end-btn" id="chat-call-end" title="End call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+                <button class="chat-call-action-btn" id="chat-call-speaker" title="Speaker">
+                    <i class="fas fa-volume-up"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -722,6 +756,120 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && chatOverlay.classList.contains('active')) {
                 closeSlideUpPanel();
+            }
+        });
+
+        // =========================
+        // CALL FUNCTIONALITY
+        // =========================
+
+        const chatCallOverlay = document.getElementById('chat-call-overlay');
+        const chatCallClose = document.getElementById('chat-call-close');
+        const chatCallEnd = document.getElementById('chat-call-end');
+        const chatCallMute = document.getElementById('chat-call-mute');
+        const chatCallTitle = document.getElementById('chat-call-title');
+        const chatCallName = document.getElementById('chat-call-name');
+        const chatCallStatus = document.getElementById('chat-call-status');
+        const chatCallInitial = document.getElementById('chat-call-initial');
+        const chatVoiceCallBtn = document.getElementById('chat-voice-call-btn');
+        const chatVideoCallBtn = document.getElementById('chat-video-call-btn');
+
+        let currentCallType = null; // 'voice' or 'video'
+        let callTimer = null;
+        let callSeconds = 0;
+
+        function openCallModal(type) {
+            if (!isLoggedIn) {
+                alert('Please sign in to make calls.');
+                return;
+            }
+            if (!activeContactId) {
+                alert('Please select a contact first.');
+                return;
+            }
+
+            currentCallType = type;
+            const contact = allContacts.find(c => c.id === activeContactId);
+            const name = contact ? contact.name : 'Contact';
+            const initial = (name || '?').charAt(0).toUpperCase();
+
+            chatCallTitle.textContent = type === 'video' ? 'Video Call' : 'Voice Call';
+            chatCallName.textContent = name;
+            chatCallInitial.textContent = initial;
+            chatCallStatus.textContent = 'Calling...';
+            chatCallStatus.style.color = '#8a6baa';
+            callSeconds = 0;
+
+            // Show/hide video elements
+            const videoContainer = document.getElementById('chat-call-video');
+            if (type === 'video') {
+                videoContainer.style.display = 'block';
+            } else {
+                videoContainer.style.display = 'none';
+            }
+
+            chatCallOverlay.style.display = 'flex';
+            setTimeout(() => {
+                chatCallOverlay.classList.add('active');
+            }, 10);
+
+            // Start call timer
+            callTimer = setInterval(() => {
+                callSeconds++;
+                const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+                const secs = (callSeconds % 60).toString().padStart(2, '0');
+                chatCallStatus.textContent = mins + ':' + secs;
+                chatCallStatus.style.color = '#4ade80';
+            }, 1000);
+
+            // Simulate connection after 3 seconds
+            setTimeout(() => {
+                if (chatCallOverlay.classList.contains('active')) {
+                    chatCallStatus.textContent = 'Connected';
+                    chatCallStatus.style.color = '#4ade80';
+                }
+            }, 3000);
+        }
+
+        function closeCallModal() {
+            chatCallOverlay.classList.remove('active');
+            setTimeout(() => {
+                chatCallOverlay.style.display = 'none';
+            }, 300);
+            if (callTimer) {
+                clearInterval(callTimer);
+                callTimer = null;
+            }
+            currentCallType = null;
+        }
+
+        // Voice call button
+        chatVoiceCallBtn.addEventListener('click', () => {
+            openCallModal('voice');
+        });
+
+        // Video call button
+        chatVideoCallBtn.addEventListener('click', () => {
+            openCallModal('video');
+        });
+
+        // Close call modal
+        chatCallClose.addEventListener('click', closeCallModal);
+        chatCallEnd.addEventListener('click', closeCallModal);
+
+        // Mute toggle
+        chatCallMute.addEventListener('click', () => {
+            const icon = chatCallMute.querySelector('i');
+            if (icon.classList.contains('fa-microphone')) {
+                icon.classList.remove('fa-microphone');
+                icon.classList.add('fa-microphone-slash');
+                chatCallMute.style.background = 'rgba(231, 76, 60, 0.3)';
+                chatCallMute.style.color = '#e74c3c';
+            } else {
+                icon.classList.remove('fa-microphone-slash');
+                icon.classList.add('fa-microphone');
+                chatCallMute.style.background = '';
+                chatCallMute.style.color = '';
             }
         });
 
