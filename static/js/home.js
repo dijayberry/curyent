@@ -254,7 +254,7 @@ function updateBadgeDisplay(badges, count) {
         { role: 'dj', slideshowId: 'dj-slideshow', dropdownId: 'dj-dropdown', label: 'DJs', icon: 'fa-music' },
         { role: 'venue', slideshowId: 'venues-slideshow', dropdownId: 'venues-dropdown', label: 'Venues', icon: 'fa-calendar-days' },
         { role: 'photographer', slideshowId: 'photographers-slideshow', dropdownId: 'photographers-dropdown', label: 'Photographers', icon: 'fa-camera' },
-        { role: 'tents', slideshowId: 'tents-slideshow', dropdownId: 'tents-dropdown', label: 'Tents', icon: 'fa-campground' },
+        { role: 'tent', slideshowId: 'tents-slideshow', dropdownId: 'tents-dropdown', label: 'Tents', icon: 'fa-campground' },
         { role: 'caterer', slideshowId: 'caterer-slideshow', dropdownId: 'caterer-dropdown', label: 'Caterers', icon: 'fa-utensils' }
     ];
 

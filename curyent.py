@@ -137,43 +137,73 @@ def api_users_by_role():
     # Map role names to their equipment/price tables
     role_price_map = {
         'dj': ('dj_equipment', 'total_per_event'),
-        'venue': ('event_venues', 'daily_rate'),
+        'venue': ('venue_profiles', 'daily_rate'),
+        'event': ('venue_profiles', 'daily_rate'),
         'photographer': ('photographer_profiles', 'daily_rate'),
-        'tents': ('tent_inventory', 'daily_rate'),
-        'caterer': ('caterer_profiles', 'per_person_rate'),
+        'tent': ('tent_profiles', 'daily_rate'),
+        'tents': ('tent_profiles', 'daily_rate'),
+        'caterer': ('caterer_profiles', 'daily_rate'),
     }
     
     table_name, price_column = role_price_map.get(role, (None, None))
     if not table_name:
         return jsonify({'success': False, 'error': 'Invalid role'}), 400
-    
+
     import templates.account.db as db
-    conn = db.get_db()
-    cursor = conn.cursor()
-    
-    # Query users with their role-specific data
-    cursor.execute('''
-        SELECT u.id, u.username, u.location, u.profile_image, u.title,
-               e.{price_col} as price
+    import templates.profile.profile as profile_module
+
+    # Get users from curyent.db
+    main_conn = db.get_db()
+    main_cursor = main_conn.cursor()
+
+    # Handle both 'event' and 'venue' roles, and both 'tents' and 'tent' roles
+    role_conditions = []
+    role_params = []
+    if role in ('venue', 'event'):
+        role_conditions.append("u.role IN ('venue', 'event')")
+    elif role in ('tent', 'tents'):
+        role_conditions.append("u.role IN ('tent', 'tents')")
+    else:
+        role_conditions.append("u.role = ?")
+        role_params.append(role)
+
+    role_where = ' AND '.join(role_conditions)
+    main_cursor.execute(f'''
+        SELECT id, username, location, profile_image, title
         FROM users u
-        LEFT JOIN {table} e ON u.id = e.user_id
-        WHERE u.role = ?
+        WHERE {role_where}
         ORDER BY u.created_at DESC
         LIMIT ?
-    '''.format(table=table_name, price_col=price_column), (role, limit))
-    
+    ''', role_params + [limit])
+    users_rows = main_cursor.fetchall()
+    main_conn.close()
+
+    # Get prices from probase.db
+    probase_conn = profile_module.get_probase_db()
+    probase_cursor = probase_conn.cursor()
+
     users = []
-    for row in cursor.fetchall():
+    for row in users_rows:
+        user_id = row['id']
+        price = None
+        try:
+            probase_cursor.execute(f'SELECT {price_column} FROM {table_name} WHERE user_id = ?', (user_id,))
+            price_row = probase_cursor.fetchone()
+            if price_row:
+                price = price_row[0]
+        except Exception:
+            pass
+
         users.append({
-            'id': row['id'],
+            'id': user_id,
             'username': row['username'],
             'location': row['location'] or '',
             'profile_image': row['profile_image'] or '',
             'title': row['title'] or '',
-            'price': row['price'],
+            'price': price,
         })
-    
-    conn.close()
+
+    probase_conn.close()
     return jsonify({'success': True, 'users': users})
 
 

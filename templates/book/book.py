@@ -41,8 +41,10 @@ ROLE_RATE_MAP = {
     'dj': ('dj_equipment', 'total_per_event'),
     'photographer': ('photographer_profiles', 'daily_rate'),
     'caterer': ('caterer_profiles', 'daily_rate'),
-    'venue': ('event_venues', 'daily_rate'),
-    'tent': ('tent_inventory', 'daily_rate'),
+    'venue': ('venue_profiles', 'daily_rate'),
+    'event': ('venue_profiles', 'daily_rate'),
+    'tent': ('tent_profiles', 'daily_rate'),
+    'tents': ('tent_profiles', 'daily_rate'),
 }
 
 
@@ -322,8 +324,8 @@ def can_book(booker_id, booked_id, booked_role):
         return False, "You cannot book a client"
 
     # A provider cannot book their own role (e.g., DJ cannot book DJ)
-    provider_roles = ['dj', 'photographer', 'caterer', 'event', 'tent']
-    role_display_map = {'dj': 'DJ', 'photographer': 'Photographer', 'caterer': 'Caterer', 'event': 'Venue', 'tent': 'Tent'}
+    provider_roles = ['dj', 'photographer', 'caterer', 'venue', 'event', 'tent', 'tents']
+    role_display_map = {'dj': 'DJ', 'photographer': 'Photographer', 'caterer': 'Caterer', 'venue': 'Venue', 'event': 'Venue', 'tent': 'Tent', 'tents': 'Tent'}
     if booker_role in provider_roles and booked_role == booker_role:
         role_display = role_display_map.get(booker_role, booker_role.capitalize())
         return False, f"You cannot book another {role_display}"
@@ -377,13 +379,13 @@ def get_bookable_profiles(exclude_user_id=None, exclude_role=None):
         for row in main_cursor.fetchall():
             profiles.append(dict(row))
 
-    # Event venues — exclude if the booker is a venue
-    if exclude_role != 'event':
+    # Venues — exclude if the booker is a venue
+    if exclude_role not in ('venue', 'event'):
         main_cursor.execute('''
-            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, ev.daily_rate, 'event_venues' as profile_table
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, ev.daily_rate, 'venue_profiles' as profile_table
             FROM users u
-            JOIN event_venues ev ON u.id = ev.user_id
-            WHERE u.role = 'event' AND u.id != ?
+            JOIN venue_profiles ev ON u.id = ev.user_id
+            WHERE u.role IN ('venue', 'event') AND u.id != ?
         ''', (exclude_user_id,))
         for row in main_cursor.fetchall():
             profiles.append(dict(row))
@@ -400,12 +402,12 @@ def get_bookable_profiles(exclude_user_id=None, exclude_role=None):
             profiles.append(dict(row))
 
     # Tents — exclude if the booker is a tent
-    if exclude_role != 'tent':
+    if exclude_role not in ('tent', 'tents'):
         main_cursor.execute('''
-            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, t.daily_rate, 'tent_inventory' as profile_table
+            SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, t.daily_rate, 'tent_profiles' as profile_table
             FROM users u
-            JOIN tent_inventory t ON u.id = t.user_id
-            WHERE u.role = 'tent' AND u.id != ?
+            JOIN tent_profiles t ON u.id = t.user_id
+            WHERE u.role IN ('tent', 'tents') AND u.id != ?
         ''', (exclude_user_id,))
         for row in main_cursor.fetchall():
             profiles.append(dict(row))
@@ -483,7 +485,7 @@ def booking_page():
         pass
 
     # Providers cannot book their own role, so exclude it from the profiles list
-    exclude_role = user_role if user_role in ['dj', 'photographer', 'caterer', 'event', 'tent'] else None
+    exclude_role = user_role if user_role in ['dj', 'photographer', 'caterer', 'venue', 'event', 'tent', 'tents'] else None
     profiles = get_bookable_profiles(exclude_user_id=user_id, exclude_role=exclude_role)
     my_bookings = get_user_bookings(user_id)
     received_bookings = get_received_bookings(user_id)
@@ -502,9 +504,9 @@ def booking_page():
             # Map role to the corresponding profile table and rate column
             role_tables = {
                 'dj': ('dj_equipment', 'total_per_event'),
-                'event': ('event_venues', 'daily_rate'),
+                'venue': ('venue_profiles', 'daily_rate'),
                 'photographer': ('photographer_profiles', 'daily_rate'),
-                'tent': ('tent_inventory', 'daily_rate'),
+                'tent': ('tent_profiles', 'daily_rate'),
                 'caterer': ('caterer_profiles', 'daily_rate'),
             }
             if role in role_tables:
