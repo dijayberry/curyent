@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="/logo.png"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/home.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
 </head>
 <body>
     <header class="home-header">
@@ -300,10 +301,149 @@
         </section>
     </main>
 
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-top">
+                <!-- Brand -->
+                <div class="footer-brand">
+                    <a href="/" class="footer-brand-logo">
+                        <img src="/logo.png" alt="CURYENT">
+                        <span>CURYENT</span>
+                    </a>
+                    <p class="footer-brand-description">
+                        Kenya's premier event networking platform. Connect with DJs, photographers, venues, tents, and caterers for your perfect event.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="/bookings"><i class="fas fa-chevron-right"></i> Bookings</a></li>
+                        <li><a href="/chat"><i class="fas fa-chevron-right"></i> Chat</a></li>
+                        <li><a href="/notifications"><i class="fas fa-chevron-right"></i> Notifications</a></li>
+                        <li><a href="/friends"><i class="fas fa-chevron-right"></i> Friends</a></li>
+                    </ul>
+                </div>
+
+                <!-- Services -->
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="#djs"><i class="fas fa-chevron-right"></i> DJs</a></li>
+                        <li><a href="#venues"><i class="fas fa-chevron-right"></i> Venues</a></li>
+                        <li><a href="#photographers"><i class="fas fa-chevron-right"></i> Photographers</a></li>
+                        <li><a href="#tents"><i class="fas fa-chevron-right"></i> Tents</a></li>
+                        <li><a href="#caterer"><i class="fas fa-chevron-right"></i> Caterers</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="footer-contact">
+                        <li><i class="fas fa-map-marker-alt"></i> Nairobi, Kenya</li>
+                        <li><i class="fas fa-envelope"></i> support@curyent.com</li>
+                        <li><i class="fas fa-phone"></i> +254 700 000 000</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bottom -->
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2026 CURYENT. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#" id="footer-terms-link">Terms & Conditions</a>
+                    <a href="#" id="footer-privacy-link">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Terms Modal -->
+    <div class="terms-modal-overlay" id="termsModal">
+        <div class="terms-modal">
+            <div class="terms-modal-header">
+                <h3>Terms & Conditions</h3>
+                <button class="terms-modal-close" id="termsModalClose">&times;</button>
+            </div>
+            <div class="terms-modal-body">
+                <h4>1. Acceptance of Terms</h4>
+                <p>By accessing and using CURYENT, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not use our platform.</p>
+
+                <h4>2. User Accounts</h4>
+                <p>You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
+
+                <h4>3. Services</h4>
+                <p>CURYENT connects event clients with service providers including DJs, photographers, venues, tent services, and caterers. We act as a platform and do not directly provide these services.</p>
+
+                <h4>4. Bookings and Payments</h4>
+                <ul>
+                    <li>All bookings are subject to provider acceptance</li>
+                    <li>Payments are processed securely through M-Pesa</li>
+                    <li>Cancellation policies vary by provider</li>
+                    <li>Refunds are handled on a case-by-case basis</li>
+                </ul>
+
+                <h4>5. Code of Conduct</h4>
+                <p>Users must treat each other with respect. Harassment, discrimination, fraud, or any illegal activity will result in immediate account suspension and may be reported to authorities.</p>
+
+                <h4>6. Privacy</h4>
+                <p>Your personal information is protected under our Privacy Policy. We do not sell your data to third parties. Your phone number is used only for SMS verification and M-Pesa payments.</p>
+
+                <h4>7. Limitation of Liability</h4>
+                <p>CURYENT is a platform that connects users. We are not liable for disputes between clients and providers, service quality issues, or damages arising from the use of our platform.</p>
+
+                <h4>8. Changes to Terms</h4>
+                <p>We reserve the right to update these terms at any time. Continued use of the platform after changes constitutes acceptance of the new terms.</p>
+
+                <h4>9. Contact</h4>
+                <p>For questions about these terms, contact us at support@curyent.com.</p>
+            </div>
+            <div class="terms-modal-footer">
+                <button id="termsModalAccept">I Understand</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Pass logged-in state to JS
         window.__homeLoggedIn = {{ 'true' if logged_in else 'false' }};
     </script>
     <script src="/static/js/home.js"></script>
+    <script>
+        // Terms modal
+        (function(){
+            var modal = document.getElementById('termsModal');
+            var closeBtn = document.getElementById('termsModalClose');
+            var acceptBtn = document.getElementById('termsModalAccept');
+            var footerTerms = document.getElementById('footer-terms-link');
+            var footerPrivacy = document.getElementById('footer-privacy-link');
+
+            function openModal(e) {
+                e.preventDefault();
+                modal.classList.add('show');
+            }
+            function closeModal() {
+                modal.classList.remove('show');
+            }
+
+            if (footerTerms) footerTerms.addEventListener('click', openModal);
+            if (footerPrivacy) footerPrivacy.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (acceptBtn) acceptBtn.addEventListener('click', closeModal);
+            if (modal) modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
+        })();
+    </script>
 </body>
 </html>

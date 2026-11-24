@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="/logo.png"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/social.css">
+    <link rel="stylesheet" href="/static/css/footer.css">
 </head>
 <body>
     <header class="social-header">
@@ -164,6 +165,75 @@
         window.reviewedUserId = {{ reviewed_user.id }};
         window.reviewedUserProfileImage = "{{ reviewed_user.profile_image or '' }}";
         window.currentRelationship = "{{ relationship or '' }}";
+    </script>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="/" class="footer-brand-logo"><img src="/logo.png" alt="CURYENT"><span>CURYENT</span></a>
+                    <p class="footer-brand-description">Kenya's premier event networking platform.</p>
+                    <div class="footer-social">
+                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> Home</a></li>
+                        <li><a href="/bookings"><i class="fas fa-chevron-right"></i> Bookings</a></li>
+                        <li><a href="/chat"><i class="fas fa-chevron-right"></i> Chat</a></li>
+                        <li><a href="/friends"><i class="fas fa-chevron-right"></i> Friends</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> DJs</a></li>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> Venues</a></li>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> Photographers</a></li>
+                        <li><a href="/"><i class="fas fa-chevron-right"></i> Caterers</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="footer-contact">
+                        <li><i class="fas fa-map-marker-alt"></i> Nairobi, Kenya</li>
+                        <li><i class="fas fa-envelope"></i> support@curyent.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2026 CURYENT. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#" id="footer-terms-link">Terms & Conditions</a>
+                    <a href="#" id="footer-privacy-link">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <div class="terms-modal-overlay" id="termsModal">
+        <div class="terms-modal">
+            <div class="terms-modal-header"><h3>Terms & Conditions</h3><button class="terms-modal-close" id="termsModalClose">&times;</button></div>
+            <div class="terms-modal-body">
+                <h4>1. Acceptance of Terms</h4><p>By accessing and using CURYENT, you agree to be bound by these Terms & Conditions.</p>
+                <h4>2. User Accounts</h4><p>You must provide accurate information and maintain account security.</p>
+                <h4>3. Services</h4><p>CURYENT connects event clients with service providers. We act as a platform only.</p>
+                <h4>4. Bookings and Payments</h4><p>Payments are processed through M-Pesa. Cancellation policies vary by provider.</p>
+                <h4>5. Code of Conduct</h4><p>Treat all users with respect. Harassment or fraud will result in account suspension.</p>
+                <h4>6. Privacy</h4><p>Your data is protected. We do not sell your information to third parties.</p>
+                <h4>7. Limitation of Liability</h4><p>CURYENT is not liable for disputes between clients and providers.</p>
+                <h4>8. Contact</h4><p>For questions, contact us at support@curyent.com.</p>
+            </div>
+            <div class="terms-modal-footer"><button id="termsModalAccept">I Understand</button></div>
+        </div>
+    </div>
+    <script>
+        (function(){var m=document.getElementById('termsModal'),c=document.getElementById('termsModalClose'),a=document.getElementById('termsModalAccept'),t=document.getElementById('footer-terms-link'),p=document.getElementById('footer-privacy-link');function o(e){e.preventDefault();m.classList.add('show')}function h(){m.classList.remove('show')}if(t)t.addEventListener('click',o);if(p)p.addEventListener('click',o);if(c)c.addEventListener('click',h);if(a)a.addEventListener('click',h);if(m)m.addEventListener('click',function(e){if(e.target===m)h()})})();
     </script>
 </body>
 </html>
