@@ -10,6 +10,7 @@ Run this in the PythonAnywhere Bash console:
 import sqlite3
 import os
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 # Database paths
 base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'base')
@@ -19,6 +20,7 @@ probase_db = os.path.join(base_dir, 'probase.db')
 social_db = os.path.join(base_dir, 'social.db')
 
 PASSWORD = 'curyent2024'
+HASHED_PASSWORD = generate_password_hash(PASSWORD)
 
 # Sample data for each role
 client_names = [
@@ -103,6 +105,7 @@ def create_users_in_db(db_path, db_name):
 
     created = 0
     skipped = 0
+    updated = 0
 
     # Clients
     for i, name in enumerate(client_names):
@@ -114,11 +117,17 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, phone, location)
                 VALUES (?, ?, ?, 'client', ?, ?)
-            ''', (username, email, PASSWORD, phone, location))
+            ''', (username, email, HASHED_PASSWORD, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
@@ -133,11 +142,17 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, title, phone, location)
                 VALUES (?, ?, ?, 'dj', ?, ?, ?)
-            ''', (username, email, PASSWORD, title, phone, location))
+            ''', (username, email, HASHED_PASSWORD, title, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
@@ -152,11 +167,17 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, title, phone, location)
                 VALUES (?, ?, ?, 'photographer', ?, ?, ?)
-            ''', (username, email, PASSWORD, title, phone, location))
+            ''', (username, email, HASHED_PASSWORD, title, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
@@ -171,11 +192,17 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, title, phone, location)
                 VALUES (?, ?, ?, 'venue', ?, ?, ?)
-            ''', (username, email, PASSWORD, title, phone, location))
+            ''', (username, email, HASHED_PASSWORD, title, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
@@ -190,11 +217,17 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, title, phone, location)
                 VALUES (?, ?, ?, 'tent', ?, ?, ?)
-            ''', (username, email, PASSWORD, title, phone, location))
+            ''', (username, email, HASHED_PASSWORD, title, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
@@ -209,17 +242,23 @@ def create_users_in_db(db_path, db_name):
             cursor.execute('''
                 INSERT OR IGNORE INTO users (username, email, password, role, title, phone, location)
                 VALUES (?, ?, ?, 'caterer', ?, ?, ?)
-            ''', (username, email, PASSWORD, title, phone, location))
+            ''', (username, email, HASHED_PASSWORD, title, phone, location))
             if cursor.rowcount > 0:
                 created += 1
             else:
                 skipped += 1
+                # Update existing user's password to hashed version
+                cursor.execute('''
+                    UPDATE users SET password = ? WHERE username = ?
+                ''', (HASHED_PASSWORD, username))
+                if cursor.rowcount > 0:
+                    updated += 1
         except Exception:
             skipped += 1
 
     conn.commit()
     conn.close()
-    print(f"  {db_name}: {created} created, {skipped} skipped (already existed)")
+    print(f"  {db_name}: {created} created, {skipped} skipped, {updated} password(s) updated")
     return created
 
 
