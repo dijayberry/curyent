@@ -20,6 +20,9 @@ BOOK_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__fi
 # Import the main db module to read users and their profiles
 import templates.account.db as main_db
 
+# Import the profile module to read profile tables from probase.db
+import templates.profile.profile as profile_module
+
 # Import notification helper to create automatic notifications
 import templates.notifications.noti as noti_module
 
@@ -359,71 +362,71 @@ def can_book(booker_id, booked_id, booked_role):
 
 def get_bookable_profiles(exclude_user_id=None, exclude_role=None):
     """
-    Get all bookable profiles from the main database.
+    Get all bookable profiles from probase.db.
     Returns a list of profiles with user info and daily rates.
     If exclude_user_id is provided, that user will not appear in the list.
     If exclude_role is provided, that role will not appear in the list (used when a provider cannot book their own role).
     """
     profiles = []
-    main_conn = main_db.get_db()
-    main_cursor = main_conn.cursor()
+    probase_conn = profile_module.get_probase_db()
+    probase_cursor = probase_conn.cursor()
 
     # DJs — exclude if the booker is a DJ
     if exclude_role != 'dj':
-        main_cursor.execute('''
+        probase_cursor.execute('''
             SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, de.total_per_event as daily_rate, 'dj_equipment' as profile_table
             FROM users u
             JOIN dj_equipment de ON u.id = de.user_id
             WHERE u.role = 'dj' AND u.id != ?
         ''', (exclude_user_id,))
-        for row in main_cursor.fetchall():
+        for row in probase_cursor.fetchall():
             profiles.append(dict(row))
 
     # Venues — exclude if the booker is a venue
     if exclude_role not in ('venue', 'event'):
-        main_cursor.execute('''
+        probase_cursor.execute('''
             SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, ev.daily_rate, 'venue_profiles' as profile_table
             FROM users u
             JOIN venue_profiles ev ON u.id = ev.user_id
             WHERE u.role IN ('venue', 'event') AND u.id != ?
         ''', (exclude_user_id,))
-        for row in main_cursor.fetchall():
+        for row in probase_cursor.fetchall():
             profiles.append(dict(row))
 
     # Photographers — exclude if the booker is a photographer
     if exclude_role != 'photographer':
-        main_cursor.execute('''
+        probase_cursor.execute('''
             SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, p.daily_rate, 'photographer_profiles' as profile_table
             FROM users u
             JOIN photographer_profiles p ON u.id = p.user_id
             WHERE u.role = 'photographer' AND u.id != ?
         ''', (exclude_user_id,))
-        for row in main_cursor.fetchall():
+        for row in probase_cursor.fetchall():
             profiles.append(dict(row))
 
     # Tents — exclude if the booker is a tent
     if exclude_role not in ('tent', 'tents'):
-        main_cursor.execute('''
+        probase_cursor.execute('''
             SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, t.daily_rate, 'tent_profiles' as profile_table
             FROM users u
             JOIN tent_profiles t ON u.id = t.user_id
             WHERE u.role IN ('tent', 'tents') AND u.id != ?
         ''', (exclude_user_id,))
-        for row in main_cursor.fetchall():
+        for row in probase_cursor.fetchall():
             profiles.append(dict(row))
 
     # Caterers — exclude if the booker is a caterer
     if exclude_role != 'caterer':
-        main_cursor.execute('''
+        probase_cursor.execute('''
             SELECT u.id, u.username, u.role, u.phone, u.location, u.profile_image, c.daily_rate, 'caterer_profiles' as profile_table
             FROM users u
             JOIN caterer_profiles c ON u.id = c.user_id
             WHERE u.role = 'caterer' AND u.id != ?
         ''', (exclude_user_id,))
-        for row in main_cursor.fetchall():
+        for row in probase_cursor.fetchall():
             profiles.append(dict(row))
 
-    main_conn.close()
+    probase_conn.close()
     return profiles
 
 
@@ -501,7 +504,8 @@ def booking_page():
         if user:
             user_dict = dict(user)
             role = user_dict['role']
-            # Map role to the corresponding profile table and rate column
+            main_conn.close()
+            # Map role to the corresponding profile table and rate column (in probase.db)
             role_tables = {
                 'dj': ('dj_equipment', 'total_per_event'),
                 'venue': ('venue_profiles', 'daily_rate'),
@@ -511,12 +515,14 @@ def booking_page():
             }
             if role in role_tables:
                 table, rate_col = role_tables[role]
-                main_cursor.execute(f'SELECT {rate_col} as daily_rate FROM {table} WHERE user_id = ?', (provider_id,))
-                rate_row = main_cursor.fetchone()
+                probase_conn = profile_module.get_probase_db()
+                probase_cursor = probase_conn.cursor()
+                probase_cursor.execute(f'SELECT {rate_col} as daily_rate FROM {table} WHERE user_id = ?', (provider_id,))
+                rate_row = probase_cursor.fetchone()
                 if rate_row:
                     user_dict['daily_rate'] = rate_row['daily_rate']
                     provider = user_dict
-        main_conn.close()
+                probase_conn.close()
 
     return render_template('book/booking.html',
                            profiles=profiles,
