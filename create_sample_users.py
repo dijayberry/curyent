@@ -224,7 +224,7 @@ def create_users_in_db(db_path, db_name):
 
 
 def create_role_profiles():
-    """Create role-specific profiles in probase.db."""
+    """Create role-specific profiles in probase.db with unique rates and details."""
     print("\nCreating role-specific profiles in probase.db...")
     conn = sqlite3.connect(probase_db)
     cursor = conn.cursor()
@@ -291,11 +291,137 @@ def create_role_profiles():
 
     conn.commit()
 
+    # Unique DJ equipment and rates (varied by experience level)
+    dj_equipment_list = [
+        ('Pioneer DDJ-1000, CDJ-3000, Allen & Heath Mixer, QSC Speakers', 15000.0),
+        ('Pioneer DDJ-FLX4, Laptop, Yamaha Speakers', 8000.0),
+        ('Technics SL-1200, Rane Mixer, ELAC Speakers', 12000.0),
+        ('Pioneer DDJ-400, Laptop, JBL EON 710', 6000.0),
+        ('CDJ-2000NXS2, DJM-900NXS2, Funktion-One Speakers', 18000.0),
+        ('Pioneer DDJ-REV7, Rane SL3, QSC K12.2', 10000.0),
+        ('Numark Mixtrack Pro FX, Edifier Speakers', 4500.0),
+        ('Pioneer DDJ-FLX10, DJM-V10, Funktion-One', 20000.0),
+        ('Hercules DJControl Inpulse 500, Logitech Speakers', 3500.0),
+        ('Pioneer CDJ-3000, DJM-V10, L-Acoustics', 25000.0),
+        ('Vestax VCI-400, Laptop, Bose Speakers', 5500.0),
+        ('Pioneer DDJ-1000Saber, DJM-900NXS2, QSC', 14000.0),
+        ('Native Instruments S4, Traktor Kontrol S4, Edifier', 4000.0),
+        ('Pioneer DDJ-FLX4, Mackie Thump Speakers', 7000.0),
+        ('Technics SL-1210, Reloop Mixer, ELAC Debut', 11000.0),
+        ('Pioneer DDJ-ATM1, Laptop, JBL PartyBox', 5000.0),
+        ('CDJ-2000, DJM-900, Funktion-One Cobalt', 16000.0),
+        ('Pioneer DDJ-400, Edifier R1280T', 3000.0),
+        ('Pioneer DDJ-REV7, Rane SL3, QSC K12.2', 9500.0),
+        ('Pioneer XDJ-RX2, RCF Speakers', 13000.0),
+    ]
+
+    # Unique photographer specializations and rates
+    photo_specializations = [
+        ('Wedding & Portrait Photography', 5000.0),
+        ('Event & Corporate Photography', 4000.0),
+        ('Wedding & Documentary Photography', 6000.0),
+        ('Portrait & Fashion Photography', 3500.0),
+        ('Event & Concert Photography', 4500.0),
+        ('Wedding & Lifestyle Photography', 5500.0),
+        ('Product & Commercial Photography', 7000.0),
+        ('Event & Social Photography', 3000.0),
+        ('Wedding & Fine Art Photography', 8000.0),
+        ('Sports & Action Photography', 4000.0),
+        ('Portrait & Headshot Photography', 2500.0),
+        ('Event & Nightlife Photography', 3500.0),
+        ('Wedding & Engagement Photography', 5000.0),
+        ('Food & Culinary Photography', 6500.0),
+        ('Aerial & Drone Photography', 9000.0),
+        ('Event & Festival Photography', 3000.0),
+        ('Wedding & Traditional Photography', 4500.0),
+        ('Architecture & Interior Photography', 7500.0),
+        ('Event & Birthday Photography', 2000.0),
+        ('Wedding & Luxury Photography', 10000.0),
+    ]
+
+    # Unique venue capacities and rates
+    venue_details = [
+        (500, 25000.0),   # Mark Hotel - large
+        (150, 12000.0),   # Olives Garden - medium
+        (300, 20000.0),   # Sunset Resort - large
+        (200, 15000.0),   # Royal Lodge - medium
+        (400, 30000.0),   # Grand Ballroom - very large
+        (100, 8000.0),    # Emerald Gardens - small
+        (350, 22000.0),   # Skyline Hotel - large
+        (250, 18000.0),   # Lakeside Resort - medium-large
+        (180, 14000.0),   # Palm Beach Hotel - medium
+        (120, 10000.0),   # Heritage Lodge - small-medium
+        (600, 35000.0),   # Crystal Hall - very large
+        (80, 6000.0),     # Golden Acres - small
+        (200, 16000.0),   # Sunrise Garden - medium
+        (450, 28000.0),   # The Grand Pavilion - very large
+        (280, 19000.0),   # Olive Tree Resort - medium-large
+        (150, 11000.0),   # Marigold Hotel - medium
+        (100, 9000.0),    # Savanna Lodge - small
+        (320, 21000.0),   # Blue Waters Resort - large
+        (90, 7000.0),     # Crown Gardens - small
+        (500, 32000.0),   # Elegance Hall - very large
+    ]
+
+    # Unique tent types and rates
+    tent_details = [
+        ('Royal Marquee (500 guests), VIP Lounge Setup', 20000.0),
+        ('Gazebo (100 guests), Garden Party Setup', 8000.0),
+        ('Grand Marquee (300 guests), Full Lighting', 15000.0),
+        ('Celestial Dome (200 guests), Starlight Effect', 18000.0),
+        ('Prestige Marquee (250 guests), Sound System', 12000.0),
+        ('Golden Marquee (400 guests), Premium Decor', 25000.0),
+        ('Luxury Canopy (150 guests), Air Conditioning', 14000.0),
+        ('Crystal Clear Dome (100 guests), Panoramic View', 22000.0),
+        ('Sunrise Marquee (200 guests), Open Side Design', 10000.0),
+        ('Emerald Pavilion (300 guests), Garden Theme', 16000.0),
+        ('Skyline Marquee (350 guests), Rooftop Setup', 19000.0),
+        ('Heritage Marquee (180 guests), Traditional Design', 11000.0),
+        ('Olive Branch Canopy (120 guests), Rustic Style', 9000.0),
+        ('Savanna Marquee (250 guests), Open Air', 13000.0),
+        ('Blue Sky Dome (150 guests), Transparent Roof', 21000.0),
+        ('Crown Marquee (400 guests), Royal Theme', 24000.0),
+        ('Golden Gate Marquee (200 guests), Entrance Arch', 12000.0),
+        ('Sunset Canopy (100 guests), Beach Setup', 7000.0),
+        ('Pearl Pavilion (280 guests), Elegant Draping', 17000.0),
+        ('Diamond Marquee (500 guests), Full Service', 30000.0),
+    ]
+
+    # Unique caterer menu types and rates
+    caterer_details = [
+        ('Kenyan Traditional, Nyama Choma, Ugali & Sukuma', 5000.0),
+        ('Continental, Grilled Meats, Seafood Platter', 12000.0),
+        ('Home Cooking, Kenyan Fusion, Family Style', 4000.0),
+        ('Professional Catering, Buffet & Plated Service', 15000.0),
+        ('BBQ Specialist, Grilled Meats, Sides & Sauces', 8000.0),
+        ('Traditional Kenyan, Chapati, Samosas, Stews', 3500.0),
+        ('International Cuisine, Multi-Course Meals', 18000.0),
+        ('Home-Style Cooking, Comfort Food, Desserts', 4500.0),
+        ('Corporate Catering, Boxed Lunches, Buffets', 10000.0),
+        ('Traditional Feasts, Roasted Whole Goat, Rice', 6000.0),
+        ('Chef-Prepared, Fusion Cuisine, Custom Menus', 14000.0),
+        ('Halal Catering, Middle Eastern, Kenyan Blend', 7000.0),
+        ('Asian-Kenyan Fusion, Noodles, Rice, Curries', 9000.0),
+        ('Traditional Breakfast, Brunch, Afternoon Tea', 5500.0),
+        ('Gourmet Catering, Fine Dining, Wine Pairing', 20000.0),
+        ('Home Baking, Cakes, Pastries, Light Meals', 3000.0),
+        ('Wedding Catering, Full Service, Decor Included', 16000.0),
+        ('Street Food Style, Kibuyu, Mandazi, Beverages', 2500.0),
+        ('Vegetarian & Vegan Options, Healthy Meals', 8500.0),
+        ('Family Kitchen, Traditional Recipes, Large Quantities', 4000.0),
+    ]
+
     # Get all users and create their role profiles
     cursor.execute("SELECT id, username, role FROM users WHERE role != 'client'")
     users = cursor.fetchall()
 
     profile_created = 0
+    dj_index = 0
+    photo_index = 0
+    venue_index = 0
+    tent_index = 0
+    caterer_index = 0
+
     for user in users:
         user_id = user[0]
         username = user[1]
@@ -303,41 +429,51 @@ def create_role_profiles():
 
         try:
             if role == 'dj':
+                equipment, rate = dj_equipment_list[dj_index % len(dj_equipment_list)]
                 cursor.execute('''
                     INSERT OR IGNORE INTO dj_equipment (user_id, equipment, total_per_event)
-                    VALUES (?, ?, 5000.0)
-                ''', (user_id, 'Pioneer DDJ-400, Laptop, JBL Speakers'))
+                    VALUES (?, ?, ?)
+                ''', (user_id, equipment, rate))
                 profile_created += cursor.rowcount
+                dj_index += 1
             elif role == 'photographer':
+                spec, rate = photo_specializations[photo_index % len(photo_specializations)]
                 cursor.execute('''
                     INSERT OR IGNORE INTO photographer_profiles (user_id, specialization, daily_rate)
-                    VALUES (?, 'Event Photography', 3000.0)
-                ''', (user_id,))
+                    VALUES (?, ?, ?)
+                ''', (user_id, spec, rate))
                 profile_created += cursor.rowcount
+                photo_index += 1
             elif role == 'venue':
+                capacity, rate = venue_details[venue_index % len(venue_details)]
                 cursor.execute('''
                     INSERT OR IGNORE INTO venue_profiles (user_id, capacity, daily_rate)
-                    VALUES (?, 100, 10000.0)
-                ''', (user_id,))
+                    VALUES (?, ?, ?)
+                ''', (user_id, capacity, rate))
                 profile_created += cursor.rowcount
+                venue_index += 1
             elif role == 'tent':
+                tent_types, rate = tent_details[tent_index % len(tent_details)]
                 cursor.execute('''
                     INSERT OR IGNORE INTO tent_profiles (user_id, tent_types, daily_rate)
-                    VALUES (?, 'Marquee, Gazebo, Dome', 8000.0)
-                ''', (user_id,))
+                    VALUES (?, ?, ?)
+                ''', (user_id, tent_types, rate))
                 profile_created += cursor.rowcount
+                tent_index += 1
             elif role == 'caterer':
+                menu_types, rate = caterer_details[caterer_index % len(caterer_details)]
                 cursor.execute('''
                     INSERT OR IGNORE INTO caterer_profiles (user_id, menu_types, daily_rate)
-                    VALUES (?, 'Buffet, Plated, Cocktail', 7000.0)
-                ''', (user_id,))
+                    VALUES (?, ?, ?)
+                ''', (user_id, menu_types, rate))
                 profile_created += cursor.rowcount
+                caterer_index += 1
         except Exception:
             pass
 
     conn.commit()
     conn.close()
-    print(f"  {profile_created} role-specific profiles created")
+    print(f"  {profile_created} role-specific profiles created with unique rates")
 
 
 def sync_to_booking_db():
